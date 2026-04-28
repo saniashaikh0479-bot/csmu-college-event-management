@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "backend": "cd backend && node server.js",
+    "backend": "cd backend && PORT=3001 node server.js",
     "start": "concurrently \"npm run backend\" \"npm run dev\"",
     "build:prod": "npm install && npm run build && cd backend && npm install",
     "start:prod": "npm run build:prod && cd backend && node server.js"
