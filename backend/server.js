@@ -459,11 +459,14 @@ app.post('/api/certificates', (req, res) => {
   res.json({ success: true, data: newCertificate });
 });
 
-// Serve static frontend in production
-if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
+// Serve static frontend when dist folder exists (production build)
+const path = require('path');
+const fs = require('fs');
+const distPath = path.join(__dirname, '../dist');
+
+if (fs.existsSync(distPath)) {
   // Serve static assets with caching
-  app.use(express.static(path.join(__dirname, '../dist'), {
+  app.use(express.static(distPath, {
     index: false,
     maxAge: '1d'
   }));
@@ -475,7 +478,7 @@ if (process.env.NODE_ENV === 'production') {
         'Pragma': 'no-cache',
         'Expires': '0'
       });
-      res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+      res.sendFile(path.join(distPath, 'index.html'));
     }
   });
 }
