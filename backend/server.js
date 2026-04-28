@@ -462,9 +462,19 @@ app.post('/api/certificates', (req, res) => {
 // Serve static frontend in production
 if (process.env.NODE_ENV === 'production') {
   const path = require('path');
-  app.use(express.static(path.join(__dirname, '../dist')));
+  // Serve static assets with caching
+  app.use(express.static(path.join(__dirname, '../dist'), {
+    index: false,
+    maxAge: '1d'
+  }));
+  // Serve index.html with no-cache so the SPA always gets the latest shell
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
       res.sendFile(path.join(__dirname, '../dist', 'index.html'));
     }
   });
