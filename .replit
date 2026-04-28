@@ -1,0 +1,16 @@
+run = "npm run build:prod && cd backend && NODE_ENV=production node server.js"
+
+[nix]
+channel = "stable-24_05"
+
+[packager]
+language = "nodejs"
+
+[packager.features]
+packageSearch = true
+guessImports = true
+
+[unitTest]
+language = "nodejs"
+
+[gitHubHook]
