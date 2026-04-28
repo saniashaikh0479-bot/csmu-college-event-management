@@ -59,7 +59,7 @@ const ParticipantManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Loading participants...</p>
       </div>
     );
@@ -67,18 +67,18 @@ const ParticipantManagement = () => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Event not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-56 p-4">
+        <main id="main-content" className="flex-1 ml-60 p-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin-dashboard')}

@@ -2,14 +2,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 const Button = ({ children, variant = 'primary', size = 'md', className = '', 'aria-label': ariaLabel, ...props }) => {
-  const baseStyles = 'font-medium border transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
-    primary: 'bg-primary-700 hover:bg-primary-800 text-white border-primary-700',
-    secondary: 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300',
-    outline: 'bg-white hover:bg-gray-50 text-gray-700 border-gray-400',
-    danger: 'bg-red-600 hover:bg-red-700 text-white border-red-600',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 border-transparent',
+    primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500',
+    secondary: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 focus:ring-primary-500',
+    outline: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 focus:ring-primary-500',
+    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-400',
   };
   
   const sizes = {

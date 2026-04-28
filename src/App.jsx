@@ -29,7 +29,7 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading, isAdmin, isStudent } = useAuth();
   
-  if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-100"><div className="text-gray-600">Loading...</div></div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-50"><div className="text-gray-600">Loading...</div></div>;
   
   if (!user) return <Navigate to="/" replace />;
   
@@ -40,7 +40,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
 
 function AppRoutes() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-100"><LoadingSpinner message="Loading..." /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50"><LoadingSpinner message="Loading..." /></div>}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin-login" element={<AdminLogin />} />

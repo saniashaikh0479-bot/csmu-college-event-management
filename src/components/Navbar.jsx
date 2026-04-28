@@ -14,17 +14,17 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-primary-900 border-b-2 border-primary-700" role="navigation" aria-label="Main navigation">
-      <div className="px-4">
-        <div className="flex justify-between h-14">
+    <nav className="bg-white border-b border-gray-200 shadow-sm" role="navigation" aria-label="Main navigation">
+      <div className="px-6">
+        <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to={isAdmin() ? '/admin-dashboard' : '/student-dashboard'} className="flex items-center space-x-3 text-white" aria-label="Go to dashboard">
-              <div className="w-8 h-8 bg-white flex items-center justify-center">
-                <span className="text-primary-900 font-bold text-sm">CE</span>
+            <Link to={isAdmin() ? '/admin-dashboard' : '/student-dashboard'} className="flex items-center space-x-3" aria-label="Go to dashboard">
+              <div className="w-9 h-9 bg-primary-900 rounded-lg flex items-center justify-center">
+                <span className="text-white font-extrabold text-xs tracking-wider">CSMU</span>
               </div>
               <div>
-                <span className="text-sm font-bold">College of Engineering</span>
-                <span className="text-primary-300 text-xs ml-2">Event Management</span>
+                <span className="text-sm font-bold text-primary-900">Chhatrapati Shivaji Maharaj University</span>
+                <span className="text-gray-400 text-xs ml-2 hidden md:inline">Event Management</span>
               </div>
             </Link>
           </div>
@@ -34,20 +34,20 @@ const Navbar = () => {
               <>
                 {isAdmin() && (
                   <Link to="/create-event" aria-label="Create new event">
-                    <Button variant="secondary" size="sm">Create Event</Button>
+                    <Button variant="primary" size="sm">Create Event</Button>
                   </Link>
                 )}
-                <Link to="/notifications" className="text-white hover:text-gray-200 relative" aria-label="View notifications">
+                <Link to="/notifications" className="text-gray-500 hover:text-primary-600 relative p-1.5 hover:bg-gray-100 rounded-lg transition-colors" aria-label="View notifications">
                   <Bell className="w-4 h-4" />
                 </Link>
-                <div className="flex items-center space-x-3 border-l border-primary-600 pl-4" aria-live="polite">
-                  <div className="text-white text-sm">
-                    <span className="font-medium">{user.name}</span>
-                    <span className="ml-2 text-primary-300 text-xs uppercase" aria-label={`Role: ${user.role}`}>{user.role}</span>
+                <div className="flex items-center space-x-3 border-l border-gray-200 pl-4" aria-live="polite">
+                  <div className="text-sm">
+                    <span className="font-medium text-gray-800">{user.name}</span>
+                    <span className="ml-2 text-gray-400 text-xs uppercase" aria-label={`Role: ${user.role}`}>{user.role}</span>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="text-primary-300 hover:text-white transition-colors"
+                    className="text-gray-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                     title="Logout"
                   >
                     <LogOut className="w-4 h-4" />

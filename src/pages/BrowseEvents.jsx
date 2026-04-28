@@ -51,18 +51,18 @@ const BrowseEvents = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner message="Loading events..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-56 p-4">
+        <main id="main-content" className="flex-1 ml-60 p-4">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">Browse Events</h1>
             <p className="text-gray-600 text-sm mt-1">Discover and register for upcoming events</p>

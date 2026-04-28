@@ -38,7 +38,7 @@ const EventDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Loading event details...</p>
       </div>
     );
@@ -46,7 +46,7 @@ const EventDetails = () => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Event not found.</p>
       </div>
     );
@@ -63,11 +63,11 @@ const EventDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-56 p-4">
+        <main id="main-content" className="flex-1 ml-60 p-4">
           <Button
             variant="ghost"
             onClick={() => navigate(isAdmin() ? '/admin-dashboard' : '/student-dashboard')}
@@ -119,7 +119,7 @@ const EventDetails = () => {
                       <p className="text-xl font-bold text-gray-900">{event.registeredTeams}/{event.maxTeams}</p>
                     </div>
                     <div className="w-32">
-                      <div className="w-full bg-gray-200 rounded h-2">
+                      <div className="w-full bg-gray-50 rounded h-2">
                         <div
                           className="bg-primary-600 h-2 rounded"
                           style={{ width: `${(event.registeredTeams / event.maxTeams) * 100}%` }}

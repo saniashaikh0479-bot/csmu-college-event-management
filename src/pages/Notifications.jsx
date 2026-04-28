@@ -82,17 +82,17 @@ const Notifications = () => {
       deadline: 'bg-red-100',
       result: 'bg-green-100'
     };
-    return colors[type] || 'bg-gray-100';
+    return colors[type] || 'bg-gray-50';
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-56 p-4">
+        <main id="main-content" className="flex-1 ml-60 p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>

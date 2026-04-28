@@ -9,7 +9,7 @@ const Select = ({ label, error, children, className = '', ...props }) => {
         </label>
       )}
       <select
-        className={`w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-gray-500 transition-colors ${error ? 'border-red-500' : ''} ${className}`}
+        className={`w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all ${error ? 'border-red-500' : ''} ${className}`}
         {...props}
       >
         {children}

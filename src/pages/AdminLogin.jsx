@@ -36,17 +36,17 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-primary-900 border-b-2 border-primary-700">
+      <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-white flex items-center justify-center">
-              <span className="text-primary-900 font-bold text-lg">CE</span>
+            <div className="w-10 h-10 bg-primary-900 rounded-lg flex items-center justify-center">
+              <span className="text-white font-extrabold text-xs tracking-wider">CSMU</span>
             </div>
             <div>
-              <h1 className="text-white text-lg font-bold leading-tight">College of Engineering</h1>
-              <p className="text-primary-300 text-xs">Event Management Portal</p>
+              <h1 className="text-primary-900 text-base font-bold leading-tight">Chhatrapati Shivaji Maharaj University</h1>
+              <p className="text-gray-400 text-xs">Event Management Portal</p>
             </div>
           </div>
         </div>
@@ -54,53 +54,54 @@ const AdminLogin = () => {
 
       {/* Login Form */}
       <main className="flex-1 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md">
-          <div className="bg-primary-800 p-4 flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white flex items-center justify-center">
-              <Shield className="w-5 h-5 text-primary-800" />
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-saffron-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-saffron-600" />
             </div>
-            <div>
-              <h2 className="text-white text-lg font-bold">Administrator Login</h2>
-              <p className="text-primary-200 text-xs">Event Coordinators & Department Heads</p>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Administrator Login</h2>
+            <p className="text-gray-500 text-sm mt-1">Event Coordinators & Department Heads</p>
           </div>
-          <Card.Body>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Username"
-                placeholder="Enter your username"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-              />
+          <Card>
+            <Card.Body>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  label="Username"
+                  placeholder="Enter your username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  required
+                />
 
-              <Input
-                label="Password"
-                type="password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                />
 
-              {error && (
-                <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-2 text-sm">
-                  {error}
-                </div>
-              )}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
 
-              <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-                {loading ? 'Authenticating...' : 'Sign In'}
-              </Button>
-            </form>
+                <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+                  {loading ? 'Authenticating...' : 'Sign In'}
+                </Button>
+              </form>
 
-            <div className="mt-4 pt-4 border-t border-gray-300">
-              <Link to="/" className="text-primary-700 hover:underline text-sm">
-                ← Back to Home
-              </Link>
-            </div>
-          </Card.Body>
-        </Card>
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <p className="text-xs text-gray-400 mb-3">Demo credentials: principal / admin123</p>
+                <Link to="/" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                  ← Back to Home
+                </Link>
+              </div>
+            </Card.Body>
+          </Card>
+        </div>
       </main>
     </div>
   );

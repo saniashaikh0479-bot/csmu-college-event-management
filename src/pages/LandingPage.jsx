@@ -1,130 +1,191 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, GraduationCap, Calendar, Users, Award, Settings } from 'lucide-react';
-import Button from '../components/Button';
+import { Shield, GraduationCap, Calendar, Users, Award, ArrowRight, QrCode, BookOpen, Trophy, ChevronRight } from 'lucide-react';
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Top Header Bar */}
-      <header className="bg-primary-900 border-b-2 border-primary-700">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Top Accent Bar */}
+      <div className="h-1 bg-gradient-to-r from-primary-700 via-saffron-500 to-primary-700" />
+
+      {/* Navigation Bar */}
+      <nav className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-white flex items-center justify-center">
-              <span className="text-primary-900 font-bold text-lg">CE</span>
+            <div className="w-12 h-12 bg-primary-900 rounded-xl flex items-center justify-center shadow-sm">
+              <span className="text-white font-extrabold text-sm tracking-wider">CSMU</span>
             </div>
             <div>
-              <h1 className="text-white text-lg font-bold leading-tight">College of Engineering</h1>
-              <p className="text-primary-300 text-xs">Event Management Portal</p>
+              <h1 className="text-primary-900 text-base font-bold leading-tight">Chhatrapati Shivaji Maharaj University</h1>
+              <p className="text-gray-400 text-xs tracking-wide">Event Management Portal</p>
             </div>
           </div>
-          <div className="text-primary-300 text-xs">
-            Academic Year 2025-26
+          <div className="hidden md:flex items-center space-x-8">
+            <span className="text-gray-500 text-sm hover:text-primary-700 transition-colors cursor-pointer">About CSMU</span>
+            <span className="text-gray-500 text-sm hover:text-primary-700 transition-colors cursor-pointer">Events</span>
+            <span className="text-gray-500 text-sm hover:text-primary-700 transition-colors cursor-pointer">Contact</span>
+            <div className="bg-primary-50 text-primary-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-primary-100">
+              Academic Year 2026-27
+            </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="max-w-5xl w-full">
-          {/* Welcome Section */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-primary-900 mb-2">
-              College Event Management System
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Centralized platform for managing inter-college events, registrations, attendance tracking, and certificate generation. Please select your access level to continue.
-            </p>
+      {/* Hero Section */}
+      <main className="flex-1">
+        <div className="bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900">
+          <div className="max-w-7xl mx-auto px-6 py-20 md:py-28">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center space-x-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
+                <div className="w-2 h-2 bg-saffron-400 rounded-full" />
+                <span className="text-white/80 text-xs font-medium tracking-wide">CSMU EVENT MANAGEMENT SYSTEM</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
+                Manage Campus Events with
+                <span className="text-saffron-400"> Precision</span>
+              </h2>
+              <p className="text-primary-200 text-lg leading-relaxed mb-8">
+                A centralized platform for managing inter-college events, registrations, attendance tracking, and certificate generation — built for administrators and students.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/admin-login" className="inline-flex items-center justify-center space-x-2 bg-saffron-500 hover:bg-saffron-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-lg shadow-saffron-500/25">
+                  <Shield className="w-5 h-5" />
+                  <span>Administrator Login</span>
+                </Link>
+                <Link to="/student-login" className="inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-lg border border-white/20 transition-colors">
+                  <GraduationCap className="w-5 h-5" />
+                  <span>Student Login</span>
+                </Link>
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Role Selection Cards */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+        {/* Role Cards Section */}
+        <div className="max-w-7xl mx-auto px-6 -mt-10">
+          <div className="grid md:grid-cols-2 gap-6">
             {/* Administrator Card */}
             <Link to="/admin-login" className="block group">
-              <div className="bg-white border-2 border-gray-300 p-0 hover:border-primary-600 transition-colors">
-                <div className="bg-primary-800 p-4 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-primary-800" />
+              <div className="bg-white border border-gray-200 rounded-xl p-7 shadow-lg hover:shadow-xl hover:border-saffron-200 transition-all duration-300">
+                <div className="flex items-center space-x-4 mb-5">
+                  <div className="w-12 h-12 bg-saffron-50 rounded-xl flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-saffron-600" />
                   </div>
                   <div>
-                    <h3 className="text-white text-lg font-bold">Administrator Access</h3>
-                    <p className="text-primary-200 text-xs">Event Coordinators & Department Heads</p>
+                    <h3 className="text-gray-900 text-lg font-bold">Administrator</h3>
+                    <p className="text-gray-400 text-sm">Event Coordinators & Department Heads</p>
                   </div>
                 </div>
-                <div className="p-5">
-                  <ul className="space-y-2 mb-5">
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Calendar className="w-4 h-4 mr-2 text-primary-600" />
-                      Create and manage events
-                    </li>
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Users className="w-4 h-4 mr-2 text-primary-600" />
-                      Track participant registrations
-                    </li>
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Award className="w-4 h-4 mr-2 text-primary-600" />
-                      Record winners & generate certificates
-                    </li>
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Settings className="w-4 h-4 mr-2 text-primary-600" />
-                      QR attendance & event analytics
-                    </li>
-                  </ul>
-                  <Button variant="primary" className="w-full">
-                    Login as Administrator
-                  </Button>
+                
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Calendar className="w-4 h-4 text-saffron-500 flex-shrink-0" />
+                    <span>Create & manage events</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Users className="w-4 h-4 text-saffron-500 flex-shrink-0" />
+                    <span>Track registrations</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Award className="w-4 h-4 text-saffron-500 flex-shrink-0" />
+                    <span>Winners & certificates</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <QrCode className="w-4 h-4 text-saffron-500 flex-shrink-0" />
+                    <span>QR attendance</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <span className="text-saffron-600 font-semibold text-sm">Login as Administrator</span>
+                  <ChevronRight className="w-4 h-4 text-saffron-500 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>
 
             {/* Student Card */}
             <Link to="/student-login" className="block group">
-              <div className="bg-white border-2 border-gray-300 p-0 hover:border-primary-600 transition-colors">
-                <div className="bg-primary-600 p-4 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-primary-600" />
+              <div className="bg-white border border-gray-200 rounded-xl p-7 shadow-lg hover:shadow-xl hover:border-primary-200 transition-all duration-300">
+                <div className="flex items-center space-x-4 mb-5">
+                  <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center">
+                    <GraduationCap className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="text-white text-lg font-bold">Student Access</h3>
-                    <p className="text-primary-100 text-xs">Current Students & Participants</p>
+                    <h3 className="text-gray-900 text-lg font-bold">Student</h3>
+                    <p className="text-gray-400 text-sm">Current Students & Participants</p>
                   </div>
                 </div>
-                <div className="p-5">
-                  <ul className="space-y-2 mb-5">
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Calendar className="w-4 h-4 mr-2 text-primary-600" />
-                      Browse & register for events
-                    </li>
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Users className="w-4 h-4 mr-2 text-primary-600" />
-                      Manage team registrations
-                    </li>
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Award className="w-4 h-4 mr-2 text-primary-600" />
-                      Download participation certificates
-                    </li>
-                    <li className="flex items-center text-sm text-gray-700">
-                      <Settings className="w-4 h-4 mr-2 text-primary-600" />
-                      Track event status & schedules
-                    </li>
-                  </ul>
-                  <Button variant="primary" className="w-full">
-                    Login as Student
-                  </Button>
+                
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Calendar className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span>Browse & register</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Users className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span>Team registrations</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <Award className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span>Download certificates</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <BookOpen className="w-4 h-4 text-primary-500 flex-shrink-0" />
+                    <span>Track schedules</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <span className="text-primary-600 font-semibold text-sm">Login as Student</span>
+                  <ChevronRight className="w-4 h-4 text-primary-500 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>
           </div>
+        </div>
 
-          {/* Info Bar */}
-          <div className="bg-white border border-gray-300 p-4">
-            <div className="flex flex-col md:flex-row items-center justify-between text-sm text-gray-600">
-              <p>Authorized access only. All activities are monitored and logged.</p>
-              <p className="mt-2 md:mt-0">© 2025 College of Engineering — Event Management System</p>
-            </div>
+        {/* Feature Highlights */}
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Platform Capabilities</h3>
+            <p className="text-gray-500 max-w-lg mx-auto">Everything you need to run campus events efficiently</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { icon: Calendar, label: 'Event Management', desc: 'Create, organize & manage events seamlessly', color: 'bg-blue-50 text-blue-600' },
+              { icon: QrCode, label: 'QR Attendance', desc: 'Scan-based attendance tracking system', color: 'bg-emerald-50 text-emerald-600' },
+              { icon: Trophy, label: 'Winner Records', desc: 'Record awards and rank participants', color: 'bg-amber-50 text-amber-600' },
+              { icon: Award, label: 'Certificates', desc: 'Auto-generated participation certificates', color: 'bg-purple-50 text-purple-600' },
+            ].map((feature, idx) => (
+              <div key={idx} className="bg-gray-50/50 border border-gray-100 rounded-xl p-6 hover:shadow-md hover:border-gray-200 transition-all duration-300">
+                <div className={`w-10 h-10 ${feature.color} rounded-lg flex items-center justify-center mb-4`}>
+                  <feature.icon className="w-5 h-5" />
+                </div>
+                <p className="text-gray-900 text-sm font-semibold mb-1">{feature.label}</p>
+                <p className="text-gray-500 text-xs leading-relaxed">{feature.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-900">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-extrabold text-xs">CSMU</span>
+              </div>
+              <span className="text-gray-400 text-sm">Chhatrapati Shivaji Maharaj University</span>
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 text-xs text-gray-500">
+              <span>Authorized access only. All activities are monitored.</span>
+              <span>© 2025 CSMU — Event Management System</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

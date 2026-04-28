@@ -33,33 +33,35 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-56 bg-white border-r border-gray-300 min-h-screen fixed left-0 top-14" role="navigation" aria-label="Sidebar navigation">
-      <div className="p-3 border-b border-gray-200">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <aside className="w-60 bg-white border-r border-gray-200 min-h-screen fixed left-0 top-16" role="navigation" aria-label="Sidebar navigation">
+      <div className="p-4 border-b border-gray-100">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
           {isAdmin() ? 'Administration' : 'Student Portal'}
         </p>
       </div>
-      <nav className="p-2 space-y-0.5" aria-label="Main menu">
-        <ul className="space-y-0.5" role="list">
+      <nav className="p-3 space-y-1" aria-label="Main menu">
+        <ul className="space-y-1" role="list">
           {menu.map((item) => (
             <li key={item.path}>
               <Link
                 to={item.path}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm transition-colors ${
-                  isActive(item.path) ? 'bg-primary-700 text-white' : 'text-gray-700 hover:bg-gray-100'
+                className={`flex items-center space-x-3 px-3 py-2.5 text-sm rounded-lg transition-all duration-200 ${
+                  isActive(item.path) 
+                    ? 'bg-primary-600 text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
                 aria-current={isActive(item.path) ? 'page' : undefined}
                 aria-label={`Navigate to ${item.name}`}
               >
                 <item.icon className="w-4 h-4" aria-hidden="true" />
-                <span>{item.name}</span>
+                <span className="font-medium">{item.name}</span>
               </Link>
             </li>
           ))}
         </ul>
       </nav>
-      <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200">
-        <p className="text-xs text-gray-400"> 2025 College of Engineering</p>
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">© 2025 CSMU</p>
       </div>
     </aside>
   );

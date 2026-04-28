@@ -12,18 +12,18 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div className={`bg-white border border-gray-300 shadow-xl w-full ${sizes[size]} max-h-[90vh] overflow-hidden`}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-300 bg-gray-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className={`bg-white border border-gray-200 rounded-2xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] overflow-hidden`}>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-200 transition-colors"
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
-        <div className="p-4 overflow-y-auto max-h-[calc(90vh-60px)]">
+        <div className="p-5 overflow-y-auto max-h-[calc(90vh-80px)]">
           {children}
         </div>
       </div>
