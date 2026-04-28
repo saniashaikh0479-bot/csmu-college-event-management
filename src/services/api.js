@@ -1,9 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Simulate API calls with delays (for consistency with mockApi)
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper function to handle API responses consistently
 const handleResponse = async (response) => {
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
@@ -13,9 +9,7 @@ const handleResponse = async (response) => {
 };
 
 export const api = {
-  // Auth
   loginAdmin: async (username, password) => {
-    await delay(500);
     try {
       const response = await fetch(`${API_BASE}/auth/admin/login`, {
         method: 'POST',
@@ -30,7 +24,6 @@ export const api = {
   },
 
   loginStudent: async (email, password) => {
-    await delay(500);
     try {
       const response = await fetch(`${API_BASE}/auth/student/login`, {
         method: 'POST',
@@ -44,9 +37,7 @@ export const api = {
     }
   },
 
-  // Events
   getEvents: async () => {
-    await delay(300);
     try {
       const response = await fetch(`${API_BASE}/events`);
       return await handleResponse(response);
@@ -57,7 +48,6 @@ export const api = {
   },
 
   getEventById: async (eventId) => {
-    await delay(200);
     try {
       const response = await fetch(`${API_BASE}/events/${eventId}`);
       return await handleResponse(response);
@@ -68,7 +58,6 @@ export const api = {
   },
 
   createEvent: async (eventData) => {
-    await delay(400);
     try {
       const response = await fetch(`${API_BASE}/events`, {
         method: 'POST',
@@ -83,7 +72,6 @@ export const api = {
   },
 
   updateEvent: async (eventId, eventData) => {
-    await delay(400);
     try {
       const response = await fetch(`${API_BASE}/events/${eventId}`, {
         method: 'PUT',
@@ -98,7 +86,6 @@ export const api = {
   },
 
   deleteEvent: async (eventId) => {
-    await delay(300);
     try {
       const response = await fetch(`${API_BASE}/events/${eventId}`, {
         method: 'DELETE'
@@ -111,7 +98,6 @@ export const api = {
   },
 
   cancelEvent: async (eventId, reason = '') => {
-    await delay(300);
     try {
       const response = await fetch(`${API_BASE}/events/${eventId}/cancel`, {
         method: 'PUT',
@@ -125,11 +111,12 @@ export const api = {
     }
   },
 
-  // Registrations
   getRegistrations: async (eventId) => {
-    await delay(300);
     try {
-      const response = await fetch(`${API_BASE}/registrations?eventId=${eventId}`);
+      const url = eventId !== undefined
+        ? `${API_BASE}/registrations?eventId=${eventId}`
+        : `${API_BASE}/registrations`;
+      const response = await fetch(url);
       return await handleResponse(response);
     } catch (error) {
       console.error('Get registrations error:', error);
@@ -138,7 +125,6 @@ export const api = {
   },
 
   getRegistrationsByStudent: async (studentId) => {
-    await delay(300);
     try {
       const response = await fetch(`${API_BASE}/registrations/student/${studentId}`);
       return await handleResponse(response);
@@ -149,7 +135,6 @@ export const api = {
   },
 
   createRegistration: async (registrationData) => {
-    await delay(400);
     try {
       const response = await fetch(`${API_BASE}/registrations`, {
         method: 'POST',
@@ -164,7 +149,6 @@ export const api = {
   },
 
   updateAttendance: async (registrationId, attended) => {
-    await delay(300);
     try {
       const response = await fetch(`${API_BASE}/registrations/${registrationId}/attendance`, {
         method: 'PUT',
@@ -178,9 +162,7 @@ export const api = {
     }
   },
 
-  // Certificates
   generateCertificate: async (certificateData) => {
-    await delay(500);
     try {
       const response = await fetch(`${API_BASE}/certificates`, {
         method: 'POST',
@@ -195,7 +177,6 @@ export const api = {
   },
 
   getCertificates: async (studentId) => {
-    await delay(300);
     try {
       const response = await fetch(`${API_BASE}/certificates/student/${studentId}`);
       return await handleResponse(response);

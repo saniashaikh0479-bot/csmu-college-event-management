@@ -95,7 +95,6 @@ const AdminLogin = () => {
             </form>
 
             <div className="mt-4 pt-4 border-t border-gray-300">
-              <p className="text-xs text-gray-500 mb-2">Demo credentials: principal / admin123</p>
               <Link to="/" className="text-primary-700 hover:underline text-sm">
                 ← Back to Home
               </Link>

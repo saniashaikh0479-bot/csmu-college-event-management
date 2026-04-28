@@ -282,13 +282,18 @@ let certificates = [
 ];
 
 const admins = [
-  { id: 1, username: 'principal', password: 'admin123', name: 'Principal', role: 'principal' }
+  { id: 1, username: 'principal', password: 'admin123', name: 'Principal', role: 'admin' }
 ];
 
 const students = [
   { id: 'STU001', email: 'rahul@college.edu', password: 'student123', name: 'Rahul Sharma', department: 'Computer Science', role: 'student' },
   { id: 'STU002', email: 'priya@college.edu', password: 'student123', name: 'Priya Gupta', department: 'Electronics', role: 'student' }
 ];
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // ============ AUTH ROUTES ============
 
