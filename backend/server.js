@@ -841,16 +841,31 @@ app.put('/api/users/:id', (req, res) => {
 
 // Delete user (admin only)
 app.delete('/api/users/:id', (req, res) => {
+  const userId = parseInt(req.params.id);
+
   // Prevent deleting super admin (id 1)
-  if (parseInt(req.params.id) === 1) {
+  if (userId === 1) {
     return res.json({ success: false, error: 'Cannot delete super admin account' });
   }
-  
-  const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
-  if (result.changes > 0) {
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  if (!user) {
+    return res.json({ success: false, error: 'User not found' });
+  }
+
+  // Delete user and all related records atomically
+  const deleteUser = db.transaction((id) => {
+    db.prepare('DELETE FROM certificates WHERE student_id = ?').run(id);
+    db.prepare('DELETE FROM registrations WHERE student_id = ?').run(id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  });
+
+  try {
+    deleteUser(userId);
     res.json({ success: true });
-  } else {
-    res.json({ success: false, error: 'User not found' });
+  } catch (err) {
+    console.error('[DELETE USER]', err.message);
+    res.json({ success: false, error: 'Failed to delete user. Please try again.' });
   }
 });
 
