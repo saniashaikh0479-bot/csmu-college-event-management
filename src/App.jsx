@@ -25,6 +25,7 @@ const MyRegistrations = lazy(() => import('./pages/MyRegistrations'));
 const MyCertificates = lazy(() => import('./pages/MyCertificates'));
 const StudentProfile = lazy(() => import('./pages/StudentProfile'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading, isAdmin, isStudent } = useAuth();
@@ -161,7 +162,13 @@ function AppRoutes() {
             <MyCertificates />
           </ProtectedRoute>
         } />
-        
+
+        <Route path="/user-management" element={
+          <ProtectedRoute requireAdmin>
+            <UserManagement />
+          </ProtectedRoute>
+        } />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

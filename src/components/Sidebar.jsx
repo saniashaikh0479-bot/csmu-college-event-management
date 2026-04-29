@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Users, QrCode, Trophy, Award, User as UserIcon, Bell, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, QrCode, Trophy, Award, User as UserIcon, Bell, FileText, Settings, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = () => {
@@ -14,6 +14,7 @@ const Sidebar = () => {
     { name: 'Attendance', path: '/attendance', icon: QrCode },
     { name: 'Winners', path: '/winners', icon: Trophy },
     { name: 'Certificates', path: '/certificates', icon: Award },
+    { name: 'User Management', path: '/user-management', icon: UserPlus },
     { name: 'Notifications', path: '/notifications', icon: Bell },
   ];
 

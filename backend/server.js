@@ -2,11 +2,20 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
+const Database = require('better-sqlite3');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
+// Initialize SQLite database
+const dbPath = path.join(__dirname, 'events.db');
+const db = new Database(dbPath);
+
+// Enable WAL mode for better performance
+db.pragma('journal_mode = WAL');
 
 // In production (Replit), allow same-origin requests since frontend is served by backend
 const corsOptions = process.env.NODE_ENV === 'production' 
@@ -30,6 +39,88 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+
+// Initialize database schema
+function initializeDatabase() {
+  // Users table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('admin', 'student')),
+      department TEXT,
+      email TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Events table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      date TEXT NOT NULL,
+      venue TEXT NOT NULL,
+      team_size INTEGER NOT NULL,
+      max_teams INTEGER NOT NULL,
+      registered_teams INTEGER DEFAULT 0,
+      deadline TEXT NOT NULL,
+      rules TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      type TEXT NOT NULL,
+      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled')),
+      created_by INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      cancelled_at DATETIME,
+      cancellation_reason TEXT,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    )
+  `);
+
+  // Registrations table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS registrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      team_name TEXT NOT NULL,
+      captain_name TEXT NOT NULL,
+      members TEXT NOT NULL,
+      department TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      attended INTEGER DEFAULT 0,
+      registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+      FOREIGN KEY (student_id) REFERENCES users(id)
+    )
+  `);
+
+  // Certificates table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS certificates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      student_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+      FOREIGN KEY (student_id) REFERENCES users(id)
+    )
+  `);
+
+  // Create super admin if not exists
+  const superAdmin = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+  if (!superAdmin) {
+    db.prepare('INSERT INTO users (username, password, name, role, department, email) VALUES (?, ?, ?, ?, ?, ?)')
+      .run('admin', 'admin', 'Super Admin', 'admin', 'Administration', 'admin@college.edu');
+    console.log('[DB] Super admin account created (username: admin, password: admin)');
+  }
+}
+
+// Initialize database on startup
+initializeDatabase();
 
 // Middleware
 app.use(limiter);
@@ -178,117 +269,6 @@ const paginate = (array, page = 1, limit = 10) => {
   };
 };
 
-// In-memory data storage (same as mockApi initial data)
-let events = [
-  {
-    id: 1,
-    name: 'Inter-College Cricket Tournament',
-    date: '2025-05-15',
-    venue: 'College Ground',
-    teamSize: 11,
-    maxTeams: 8,
-    registeredTeams: 6,
-    deadline: '2025-05-10',
-    rules: 'Each team must have 11 players. Matches will be played in T20 format.',
-    contact: 'sports_admin@college.edu',
-    type: 'sports',
-    status: 'active',
-    createdAt: '2025-04-20T10:00:00Z'
-  },
-  {
-    id: 2,
-    name: 'Dance Competition',
-    date: '2025-05-20',
-    venue: 'Auditorium',
-    teamSize: 5,
-    maxTeams: 12,
-    registeredTeams: 8,
-    deadline: '2025-05-15',
-    rules: 'Groups of 3-5 members. Performance time: 5-7 minutes.',
-    contact: 'cultural@college.edu',
-    type: 'cultural',
-    status: 'active',
-    createdAt: '2025-04-22T14:00:00Z'
-  },
-  {
-    id: 3,
-    name: 'Tech Hackathon',
-    date: '2025-06-01',
-    venue: 'Computer Lab',
-    teamSize: 4,
-    maxTeams: 20,
-    registeredTeams: 15,
-    deadline: '2025-05-25',
-    rules: 'Teams of 2-4 members. 24-hour coding challenge.',
-    contact: 'tech@college.edu',
-    type: 'technical',
-    status: 'active',
-    createdAt: '2025-04-25T09:00:00Z'
-  },
-  {
-    id: 4,
-    name: 'Workshop on AI',
-    date: '2025-05-18',
-    venue: 'Seminar Hall A',
-    teamSize: 1,
-    maxTeams: 50,
-    registeredTeams: 35,
-    deadline: '2025-05-15',
-    rules: 'Individual registration only. Certificate provided.',
-    contact: 'academic@college.edu',
-    type: 'workshop',
-    status: 'active',
-    createdAt: '2025-04-26T11:00:00Z'
-  }
-];
-
-let registrations = [
-  {
-    id: 1,
-    eventId: 1,
-    studentId: 'STU001',
-    teamName: 'Thunderbolts',
-    captainName: 'Rahul Sharma',
-    members: ['Rahul Sharma', 'Amit Patel', 'Vikram Singh', 'Suresh Kumar', 'Rajesh Verma', 'Deepak Yadav', 'Sunil Mehta', 'Anil Joshi', 'Prakash Reddy', 'Mahesh Desai', 'Karan Thakur'],
-    department: 'Computer Science',
-    contact: '9876543210',
-    attended: false,
-    registeredAt: '2025-04-28T10:30:00Z'
-  },
-  {
-    id: 2,
-    eventId: 2,
-    studentId: 'STU002',
-    teamName: 'Rhythm Makers',
-    captainName: 'Priya Gupta',
-    members: ['Priya Gupta', 'Neha Singh', 'Anita Verma', 'Kavita Rao', 'Pooja Sharma'],
-    department: 'Electronics',
-    contact: '9876543211',
-    performanceType: 'Group Dance',
-    songName: 'Nagada Sang Dhol',
-    attended: false,
-    registeredAt: '2025-04-28T11:00:00Z'
-  }
-];
-
-let certificates = [
-  {
-    id: 1,
-    eventId: 1,
-    studentId: 'STU001',
-    type: 'participation',
-    issuedAt: '2025-05-16T00:00:00Z'
-  }
-];
-
-const admins = [
-  { id: 1, username: 'principal', password: 'admin123', name: 'Principal', role: 'admin' }
-];
-
-const students = [
-  { id: 'STU001', email: 'rahul@college.edu', password: 'student123', name: 'Rahul Sharma', department: 'Computer Science', role: 'student' },
-  { id: 'STU002', email: 'priya@college.edu', password: 'student123', name: 'Priya Gupta', department: 'Electronics', role: 'student' }
-];
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -299,21 +279,21 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/auth/admin/login', authLimiter, (req, res) => {
   const { username, password } = req.body;
-  const admin = admins.find(a => a.username === username && a.password === password);
-  if (admin) {
-    const { password: _, ...adminWithoutPassword } = admin;
-    res.json({ success: true, user: adminWithoutPassword });
+  const user = db.prepare('SELECT * FROM users WHERE username = ? AND role = ?').get(username, 'admin');
+  if (user && user.password === password) {
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ success: true, user: userWithoutPassword });
   } else {
     res.json({ success: false, error: 'Invalid credentials' });
   }
 });
 
 app.post('/api/auth/student/login', authLimiter, (req, res) => {
-  const { email, password } = req.body;
-  const student = students.find(s => s.email === email && s.password === password);
-  if (student) {
-    const { password: _, ...studentWithoutPassword } = student;
-    res.json({ success: true, user: studentWithoutPassword });
+  const { username, password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE username = ? AND role = ?').get(username, 'student');
+  if (user && user.password === password) {
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ success: true, user: userWithoutPassword });
   } else {
     res.json({ success: false, error: 'Invalid credentials' });
   }
@@ -324,14 +304,43 @@ app.post('/api/auth/student/login', authLimiter, (req, res) => {
 app.get('/api/events', (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  const result = paginate(events, page, limit);
-  res.json({ success: true, ...result });
+  const offset = (page - 1) * limit;
+  
+  const events = db.prepare('SELECT * FROM events ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+  const total = db.prepare('SELECT COUNT(*) as count FROM events').get().count;
+  
+  res.json({ 
+    success: true, 
+    data: events.map(e => ({
+      ...e,
+      teamSize: e.team_size,
+      maxTeams: e.max_teams,
+      registeredTeams: e.registered_teams,
+      createdAt: e.created_at,
+      cancelledAt: e.cancelled_at,
+      cancellationReason: e.cancellation_reason
+    })),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
 });
 
 app.get('/api/events/:id', (req, res) => {
-  const event = events.find(e => e.id === parseInt(req.params.id));
+  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
   if (event) {
-    res.json({ success: true, data: event });
+    res.json({ success: true, data: {
+      ...event,
+      teamSize: event.team_size,
+      maxTeams: event.max_teams,
+      registeredTeams: event.registered_teams,
+      createdAt: event.created_at,
+      cancelledAt: event.cancelled_at,
+      cancellationReason: event.cancellation_reason
+    }});
   } else {
     res.json({ success: false, error: 'Event not found' });
   }
@@ -344,26 +353,70 @@ app.post('/api/events', (req, res) => {
     return res.json({ success: false, error: validationErrors.join(', ') });
   }
   
-  const newEvent = { ...sanitizedBody, id: Date.now(), createdAt: new Date().toISOString(), registeredTeams: 0 };
-  events.push(newEvent);
-  res.json({ success: true, data: newEvent });
+  const result = db.prepare(`
+    INSERT INTO events (name, date, venue, team_size, max_teams, registered_teams, deadline, rules, contact, type, status, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    sanitizedBody.name,
+    sanitizedBody.date,
+    sanitizedBody.venue,
+    sanitizedBody.teamSize,
+    sanitizedBody.maxTeams,
+    0,
+    sanitizedBody.deadline,
+    sanitizedBody.rules,
+    sanitizedBody.contact,
+    sanitizedBody.type,
+    'active',
+    req.body.createdBy || null
+  );
+  
+  const newEvent = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
+  res.json({ success: true, data: {
+    ...newEvent,
+    teamSize: newEvent.team_size,
+    maxTeams: newEvent.max_teams,
+    registeredTeams: newEvent.registered_teams,
+    createdAt: newEvent.created_at
+  }});
 });
 
 app.put('/api/events/:id', (req, res) => {
   const sanitizedBody = sanitizeObject(req.body);
-  const index = events.findIndex(e => e.id === parseInt(req.params.id));
-  if (index !== -1) {
-    events[index] = { ...events[index], ...sanitizedBody };
-    res.json({ success: true, data: events[index] });
-  } else {
-    res.json({ success: false, error: 'Event not found' });
+  const existing = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  if (!existing) {
+    return res.json({ success: false, error: 'Event not found' });
   }
+  
+  db.prepare(`
+    UPDATE events SET name = ?, date = ?, venue = ?, team_size = ?, max_teams = ?, 
+    deadline = ?, rules = ?, contact = ?, type = ? WHERE id = ?
+  `).run(
+    sanitizedBody.name,
+    sanitizedBody.date,
+    sanitizedBody.venue,
+    sanitizedBody.teamSize,
+    sanitizedBody.maxTeams,
+    sanitizedBody.deadline,
+    sanitizedBody.rules,
+    sanitizedBody.contact,
+    sanitizedBody.type,
+    req.params.id
+  );
+  
+  const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  res.json({ success: true, data: {
+    ...updated,
+    teamSize: updated.team_size,
+    maxTeams: updated.max_teams,
+    registeredTeams: updated.registered_teams,
+    createdAt: updated.created_at
+  }});
 });
 
 app.delete('/api/events/:id', (req, res) => {
-  const index = events.findIndex(e => e.id === parseInt(req.params.id));
-  if (index !== -1) {
-    events.splice(index, 1);
+  const result = db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
+  if (result.changes > 0) {
     res.json({ success: true });
   } else {
     res.json({ success: false, error: 'Event not found' });
@@ -372,16 +425,26 @@ app.delete('/api/events/:id', (req, res) => {
 
 app.put('/api/events/:id/cancel', (req, res) => {
   const { reason } = req.body;
-  const index = events.findIndex(e => e.id === parseInt(req.params.id));
-  if (index !== -1) {
-    events[index].status = 'cancelled';
-    events[index].cancellationReason = reason || '';
-    events[index].cancelledAt = new Date().toISOString();
-    console.log(`[EVENT] Cancelled event #${events[index].id}: ${events[index].name}`);
-    res.json({ success: true, data: events[index] });
-  } else {
-    res.json({ success: false, error: 'Event not found' });
+  const existing = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  if (!existing) {
+    return res.json({ success: false, error: 'Event not found' });
   }
+  
+  db.prepare(`
+    UPDATE events SET status = 'cancelled', cancellation_reason = ?, cancelled_at = ? WHERE id = ?
+  `).run(reason || '', new Date().toISOString(), req.params.id);
+  
+  const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  console.log(`[EVENT] Cancelled event #${updated.id}: ${updated.name}`);
+  res.json({ success: true, data: {
+    ...updated,
+    teamSize: updated.team_size,
+    maxTeams: updated.max_teams,
+    registeredTeams: updated.registered_teams,
+    createdAt: updated.created_at,
+    cancelledAt: updated.cancelled_at,
+    cancellationReason: updated.cancellation_reason
+  }});
 });
 
 // ============ REGISTRATION ROUTES ============
@@ -390,19 +453,72 @@ app.get('/api/registrations', (req, res) => {
   const { eventId } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
   
-  let filteredRegistrations = registrations;
+  let query = 'SELECT r.*, e.name as event_name, u.name as student_name FROM registrations r JOIN events e ON r.event_id = e.id JOIN users u ON r.student_id = u.id';
+  let params = [];
+  
   if (eventId) {
-    filteredRegistrations = registrations.filter(r => r.eventId === parseInt(eventId));
+    query += ' WHERE r.event_id = ?';
+    params.push(eventId);
   }
   
-  const result = paginate(filteredRegistrations, page, limit);
-  res.json({ success: true, ...result });
+  query += ' ORDER BY r.registered_at DESC LIMIT ? OFFSET ?';
+  params.push(limit, offset);
+  
+  const registrations = db.prepare(query).all(...params);
+  
+  // Get total count
+  let countQuery = 'SELECT COUNT(*) as count FROM registrations';
+  let countParams = [];
+  if (eventId) {
+    countQuery += ' WHERE event_id = ?';
+    countParams.push(eventId);
+  }
+  const total = db.prepare(countQuery).get(...countParams)?.count || 0;
+  
+  res.json({ 
+    success: true,
+    data: registrations.map(r => ({
+      ...r,
+      eventId: r.event_id,
+      studentId: r.student_id,
+      teamName: r.team_name,
+      captainName: r.captain_name,
+      registeredAt: r.registered_at,
+      eventName: r.event_name,
+      studentName: r.student_name
+    })),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
 });
 
 app.get('/api/registrations/student/:studentId', (req, res) => {
-  const studentRegistrations = registrations.filter(r => r.studentId === req.params.studentId);
-  res.json({ success: true, data: studentRegistrations });
+  const registrations = db.prepare(`
+    SELECT r.*, e.name as event_name, e.date as event_date, e.venue as event_venue, e.type as event_type
+    FROM registrations r 
+    JOIN events e ON r.event_id = e.id 
+    WHERE r.student_id = ?
+    ORDER BY r.registered_at DESC
+  `).all(req.params.studentId);
+  
+  res.json({ success: true, data: registrations.map(r => ({
+    ...r,
+    eventId: r.event_id,
+    studentId: r.student_id,
+    teamName: r.team_name,
+    captainName: r.captain_name,
+    registeredAt: r.registered_at,
+    eventName: r.event_name,
+    eventDate: r.event_date,
+    eventVenue: r.event_venue,
+    eventType: r.event_type
+  })) });
 });
 
 app.post('/api/registrations', (req, res) => {
@@ -415,52 +531,220 @@ app.post('/api/registrations', (req, res) => {
   const { eventId, studentId } = sanitizedBody;
   
   // Check for duplicate registration
-  const existingRegistration = registrations.find(
-    r => r.eventId === eventId && r.studentId === studentId
-  );
-  
-  if (existingRegistration) {
+  const existing = db.prepare('SELECT * FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId);
+  if (existing) {
     return res.json({ success: false, error: 'You are already registered for this event' });
   }
   
-  const newRegistration = { ...sanitizedBody, id: Date.now(), registeredAt: new Date().toISOString(), attended: false };
-  registrations.push(newRegistration);
-  
-  // Update event registered count
-  const eventIndex = events.findIndex(e => e.id === newRegistration.eventId);
-  if (eventIndex !== -1) {
-    events[eventIndex].registeredTeams++;
+  // Check if event exists and has capacity
+  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(eventId);
+  if (!event) {
+    return res.json({ success: false, error: 'Event not found' });
   }
   
-  res.json({ success: true, data: newRegistration });
+  if (event.registered_teams >= event.max_teams) {
+    return res.json({ success: false, error: 'Event is fully booked' });
+  }
+  
+  const result = db.prepare(`
+    INSERT INTO registrations (event_id, student_id, team_name, captain_name, members, department, contact)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    eventId,
+    studentId,
+    sanitizedBody.teamName,
+    sanitizedBody.captainName,
+    JSON.stringify(sanitizedBody.members),
+    sanitizedBody.department,
+    sanitizedBody.contact
+  );
+  
+  // Update event registered count
+  db.prepare('UPDATE events SET registered_teams = registered_teams + 1 WHERE id = ?').run(eventId);
+  
+  const newRegistration = db.prepare('SELECT * FROM registrations WHERE id = ?').get(result.lastInsertRowid);
+  res.json({ success: true, data: {
+    ...newRegistration,
+    eventId: newRegistration.event_id,
+    studentId: newRegistration.student_id,
+    teamName: newRegistration.team_name,
+    captainName: newRegistration.captain_name,
+    members: JSON.parse(newRegistration.members),
+    registeredAt: newRegistration.registered_at
+  }});
 });
 
 app.put('/api/registrations/:id/attendance', (req, res) => {
   const { attended } = req.body;
-  const index = registrations.findIndex(r => r.id === parseInt(req.params.id));
-  if (index !== -1) {
-    registrations[index].attended = attended;
-    res.json({ success: true, data: registrations[index] });
+  const existing = db.prepare('SELECT * FROM registrations WHERE id = ?').get(req.params.id);
+  if (!existing) {
+    return res.json({ success: false, error: 'Registration not found' });
+  }
+  
+  db.prepare('UPDATE registrations SET attended = ? WHERE id = ?').run(attended ? 1 : 0, req.params.id);
+  
+  const updated = db.prepare('SELECT * FROM registrations WHERE id = ?').get(req.params.id);
+  res.json({ success: true, data: {
+    ...updated,
+    eventId: updated.event_id,
+    studentId: updated.student_id,
+    teamName: updated.team_name,
+    captainName: updated.captain_name,
+    members: JSON.parse(updated.members),
+    registeredAt: updated.registered_at
+  }});
+});
+
+// ============ USER MANAGEMENT ROUTES ============
+
+// Get all users (admin only)
+app.get('/api/users', (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+  
+  const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+  const total = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+  
+  res.json({ 
+    success: true, 
+    data: users.map(u => {
+      const { password, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    }),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  });
+});
+
+// Get users by role
+app.get('/api/users/role/:role', (req, res) => {
+  const users = db.prepare('SELECT * FROM users WHERE role = ? ORDER BY created_at DESC').all(req.params.role);
+  res.json({ success: true, data: users.map(u => {
+    const { password, ...userWithoutPassword } = u;
+    return userWithoutPassword;
+  }) });
+});
+
+// Create new user (admin only)
+app.post('/api/users', (req, res) => {
+  const { username, password, name, role, department, email } = req.body;
+  
+  // Validation
+  if (!username || !password || !name || !role) {
+    return res.json({ success: false, error: 'Username, password, name, and role are required' });
+  }
+  
+  if (!['admin', 'student'].includes(role)) {
+    return res.json({ success: false, error: 'Role must be either admin or student' });
+  }
+  
+  // Check for duplicate username
+  const existing = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (existing) {
+    return res.json({ success: false, error: 'Username already exists' });
+  }
+  
+  // Check for duplicate email if provided
+  if (email) {
+    const existingEmail = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    if (existingEmail) {
+      return res.json({ success: false, error: 'Email already exists' });
+    }
+  }
+  
+  const result = db.prepare(`
+    INSERT INTO users (username, password, name, role, department, email)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(username, password, name, role, department || null, email || null);
+  
+  const newUser = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+  const { password: _, ...userWithoutPassword } = newUser;
+  res.json({ success: true, data: userWithoutPassword });
+});
+
+// Update user (admin only)
+app.put('/api/users/:id', (req, res) => {
+  const { name, department, email } = req.body;
+  
+  const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  if (!existing) {
+    return res.json({ success: false, error: 'User not found' });
+  }
+  
+  // Check for duplicate email if updating
+  if (email && email !== existing.email) {
+    const existingEmail = db.prepare('SELECT * FROM users WHERE email = ? AND id != ?').get(email, req.params.id);
+    if (existingEmail) {
+      return res.json({ success: false, error: 'Email already exists' });
+    }
+  }
+  
+  db.prepare(`
+    UPDATE users SET name = ?, department = ?, email = ? WHERE id = ?
+  `).run(name || existing.name, department !== undefined ? department : existing.department, email !== undefined ? email : existing.email, req.params.id);
+  
+  const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  const { password: _, ...userWithoutPassword } = updated;
+  res.json({ success: true, data: userWithoutPassword });
+});
+
+// Delete user (admin only)
+app.delete('/api/users/:id', (req, res) => {
+  // Prevent deleting super admin (id 1)
+  if (parseInt(req.params.id) === 1) {
+    return res.json({ success: false, error: 'Cannot delete super admin account' });
+  }
+  
+  const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  if (result.changes > 0) {
+    res.json({ success: true });
   } else {
-    res.json({ success: false, error: 'Registration not found' });
+    res.json({ success: false, error: 'User not found' });
   }
 });
 
 // ============ CERTIFICATE ROUTES ============
 
 app.get('/api/certificates/student/:studentId', (req, res) => {
-  const studentCertificates = certificates.filter(c => c.studentId === req.params.studentId);
-  res.json({ success: true, data: studentCertificates });
+  const certificates = db.prepare(`
+    SELECT c.*, e.name as event_name, e.date as event_date
+    FROM certificates c 
+    JOIN events e ON c.event_id = e.id 
+    WHERE c.student_id = ?
+    ORDER BY c.issued_at DESC
+  `).all(req.params.studentId);
+  
+  res.json({ success: true, data: certificates.map(c => ({
+    ...c,
+    eventId: c.event_id,
+    studentId: c.student_id,
+    eventName: c.event_name,
+    eventDate: c.event_date,
+    issuedAt: c.issued_at
+  })) });
 });
 
 app.post('/api/certificates', (req, res) => {
-  const newCertificate = { ...req.body, id: Date.now(), issuedAt: new Date().toISOString() };
-  certificates.push(newCertificate);
-  res.json({ success: true, data: newCertificate });
+  const result = db.prepare(`
+    INSERT INTO certificates (event_id, student_id, type)
+    VALUES (?, ?, ?)
+  `).run(req.body.eventId, req.body.studentId, req.body.type);
+  
+  const newCertificate = db.prepare('SELECT * FROM certificates WHERE id = ?').get(result.lastInsertRowid);
+  res.json({ success: true, data: {
+    ...newCertificate,
+    eventId: newCertificate.event_id,
+    studentId: newCertificate.student_id,
+    issuedAt: newCertificate.issued_at
+  }});
 });
 
 // Serve static frontend when dist folder exists (production build)
-const path = require('path');
 const fs = require('fs');
 const distPath = path.join(__dirname, '../dist');
 

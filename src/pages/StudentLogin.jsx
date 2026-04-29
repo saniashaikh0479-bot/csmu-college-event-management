@@ -9,7 +9,7 @@ import Card from '../components/Card';
 import { Link } from 'react-router-dom';
 
 const StudentLogin = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -21,7 +21,7 @@ const StudentLogin = () => {
     setLoading(true);
 
     try {
-      const response = await api.loginStudent(formData.email, formData.password);
+      const response = await api.loginStudent(formData.username, formData.password);
       if (response.success) {
         login(response.user);
         navigate('/student-dashboard');
@@ -66,11 +66,11 @@ const StudentLogin = () => {
             <Card.Body>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                  label="College Email"
-                  type="email"
-                  placeholder="Enter your college email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  label="Username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   required
                 />
 
@@ -95,7 +95,7 @@ const StudentLogin = () => {
               </form>
 
               <div className="mt-5 pt-5 border-t border-gray-100">
-                <p className="text-xs text-gray-400 mb-3">Demo credentials: rahul@college.edu / student123</p>
+                <p className="text-xs text-gray-400 mb-3">Contact admin to get your account credentials</p>
                 <Link to="/" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
                   ← Back to Home
                 </Link>

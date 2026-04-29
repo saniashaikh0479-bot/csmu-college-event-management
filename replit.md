@@ -10,8 +10,9 @@ A full-stack web application for managing inter-college events, team registratio
 
 ## Workflow
 
-- **Start application**: `npm run build:prod && cd backend && NODE_ENV=production node server.js`
+- **Start application**: `npm run start:prod`
   - Builds the React frontend, installs backend deps, then serves everything from port 5000
+  - Uses cross-env for cross-platform compatibility (Windows/Linux/macOS)
 
 ## Deployment
 

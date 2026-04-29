@@ -23,12 +23,12 @@ export const api = {
     }
   },
 
-  loginStudent: async (email, password) => {
+  loginStudent: async (username, password) => {
     try {
       const response = await fetch(`${API_BASE}/auth/student/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       });
       return await handleResponse(response);
     } catch (error) {
@@ -183,6 +183,67 @@ export const api = {
     } catch (error) {
       console.error('Get certificates error:', error);
       return { success: false, error: 'Failed to load certificates. Please try again.' };
+    }
+  },
+
+  // User management endpoints
+  getUsers: async () => {
+    try {
+      const response = await fetch(`${API_BASE}/users`);
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get users error:', error);
+      return { success: false, error: 'Failed to load users. Please try again.' };
+    }
+  },
+
+  getUsersByRole: async (role) => {
+    try {
+      const response = await fetch(`${API_BASE}/users/role/${role}`);
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get users by role error:', error);
+      return { success: false, error: 'Failed to load users. Please try again.' };
+    }
+  },
+
+  createUser: async (userData) => {
+    try {
+      const response = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Create user error:', error);
+      return { success: false, error: 'Failed to create user. Please try again.' };
+    }
+  },
+
+  updateUser: async (userId, userData) => {
+    try {
+      const response = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Update user error:', error);
+      return { success: false, error: 'Failed to update user. Please try again.' };
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const response = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'DELETE'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Delete user error:', error);
+      return { success: false, error: 'Failed to delete user. Please try again.' };
     }
   }
 };
