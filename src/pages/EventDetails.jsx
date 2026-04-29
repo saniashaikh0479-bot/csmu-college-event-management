@@ -8,7 +8,7 @@ import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import PageBackground from '../components/PageBackground';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -165,7 +165,7 @@ const EventDetails = () => {
                         Your Attendance QR Code
                       </h4>
                       <div className="bg-white p-2 border-2 border-green-400 rounded">
-                        <QRCode value={`REG-${registration.id}`} size={150} />
+                        <QRCodeSVG value={`REG-${registration.id}`} size={150} />
                       </div>
                       <p className="text-xs text-green-600 mt-2">Show this QR code at the event venue for attendance</p>
                     </div>

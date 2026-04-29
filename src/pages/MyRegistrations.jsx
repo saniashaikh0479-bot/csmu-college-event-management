@@ -10,7 +10,7 @@ import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageBackground from '../components/PageBackground';
 import { getTypeColor } from '../utils/colors';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const MyRegistrations = () => {
@@ -166,7 +166,7 @@ const MyRegistrations = () => {
               <p className="text-sm text-gray-600 mb-4">Team: {qrModal.registration.teamName}</p>
             </div>
             <div className="flex flex-col items-center p-4 bg-gray-50 border border-gray-300 rounded">
-              <QRCode value={`REG-${qrModal.registration.id}`} size={200} />
+              <QRCodeSVG value={`REG-${qrModal.registration.id}`} size={200} />
               <p className="text-xs text-gray-600 mt-3 text-center">Show this QR code at the event venue for attendance</p>
             </div>
           </div>
