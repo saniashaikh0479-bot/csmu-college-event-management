@@ -122,6 +122,16 @@ function initializeDatabase() {
 // Initialize database on startup
 initializeDatabase();
 
+// Run migrations for any schema additions
+function runMigrations() {
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN designation TEXT`);
+  } catch (e) {
+    // Column already exists — safe to ignore
+  }
+}
+runMigrations();
+
 // Middleware
 app.use(limiter);
 app.use(cors(corsOptions));
@@ -630,9 +640,45 @@ app.get('/api/users/role/:role', (req, res) => {
   }) });
 });
 
+// Student self-registration (public)
+app.post('/api/auth/register', authLimiter, (req, res) => {
+  const { username, password, name, department, email } = req.body;
+
+  if (!username || !password || !name) {
+    return res.json({ success: false, error: 'Username, password, and name are required' });
+  }
+  if (username.length < 3) {
+    return res.json({ success: false, error: 'Username must be at least 3 characters' });
+  }
+  if (password.length < 6) {
+    return res.json({ success: false, error: 'Password must be at least 6 characters' });
+  }
+
+  const existing = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (existing) {
+    return res.json({ success: false, error: 'Username already taken. Please choose another.' });
+  }
+
+  if (email) {
+    const existingEmail = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    if (existingEmail) {
+      return res.json({ success: false, error: 'Email already registered' });
+    }
+  }
+
+  const result = db.prepare(`
+    INSERT INTO users (username, password, name, role, department, email)
+    VALUES (?, ?, ?, 'student', ?, ?)
+  `).run(username, password, name, department || null, email || null);
+
+  const newUser = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+  const { password: _, ...userWithoutPassword } = newUser;
+  res.json({ success: true, data: userWithoutPassword });
+});
+
 // Create new user (admin only)
 app.post('/api/users', (req, res) => {
-  const { username, password, name, role, department, email } = req.body;
+  const { username, password, name, role, department, email, designation } = req.body;
   
   // Validation
   if (!username || !password || !name || !role) {
@@ -658,9 +704,9 @@ app.post('/api/users', (req, res) => {
   }
   
   const result = db.prepare(`
-    INSERT INTO users (username, password, name, role, department, email)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(username, password, name, role, department || null, email || null);
+    INSERT INTO users (username, password, name, role, department, email, designation)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(username, password, name, role, department || null, email || null, designation || null);
   
   const newUser = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
   const { password: _, ...userWithoutPassword } = newUser;
@@ -669,11 +715,20 @@ app.post('/api/users', (req, res) => {
 
 // Update user (admin only)
 app.put('/api/users/:id', (req, res) => {
-  const { name, department, email } = req.body;
+  const { name, department, email, role, designation, password } = req.body;
   
   const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!existing) {
     return res.json({ success: false, error: 'User not found' });
+  }
+
+  // Prevent changing super admin's role
+  if (parseInt(req.params.id) === 1 && role && role !== 'admin') {
+    return res.json({ success: false, error: 'Cannot change super admin role' });
+  }
+
+  if (role && !['admin', 'student'].includes(role)) {
+    return res.json({ success: false, error: 'Role must be either admin or student' });
   }
   
   // Check for duplicate email if updating
@@ -685,8 +740,16 @@ app.put('/api/users/:id', (req, res) => {
   }
   
   db.prepare(`
-    UPDATE users SET name = ?, department = ?, email = ? WHERE id = ?
-  `).run(name || existing.name, department !== undefined ? department : existing.department, email !== undefined ? email : existing.email, req.params.id);
+    UPDATE users SET name = ?, department = ?, email = ?, role = ?, designation = ?, password = ? WHERE id = ?
+  `).run(
+    name || existing.name,
+    department !== undefined ? department : existing.department,
+    email !== undefined ? email : existing.email,
+    role || existing.role,
+    designation !== undefined ? designation : existing.designation,
+    password && password.trim() ? password : existing.password,
+    req.params.id
+  );
   
   const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   const { password: _, ...userWithoutPassword } = updated;

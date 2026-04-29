@@ -1,48 +1,54 @@
-# College Event Management System
+# College Event Management System — CSMU
 
-A full-stack web application for managing inter-college events, team registrations, attendance tracking, and certificate generation.
+A full-stack web application for managing inter-college events, team registrations, attendance tracking, and certificate generation for Chhatrapati Shivaji Maharaj University.
 
 ## Architecture
 
-- **Frontend**: React + Vite + Tailwind CSS (built to `/dist`)
-- **Backend**: Express.js (Node.js), runs on port 5000
-- **Data storage**: In-memory (no external database — data resets on server restart)
+- **Frontend**: React + Vite + Tailwind CSS (dev server on port 5000)
+- **Backend**: Express.js (Node.js), runs on port 3001 in dev, port 5000 in production
+- **Database**: SQLite via `better-sqlite3` (`backend/events.db`) — data persists across restarts
 
-## Workflow
+## Workflow (Development)
 
-- **Start application**: `npm run start:prod`
-  - Builds the React frontend, installs backend deps, then serves everything from port 5000
-  - Uses cross-env for cross-platform compatibility (Windows/Linux/macOS)
+- **Start application**: `npm run start`
+  - Auto-installs backend deps, starts Vite (port 5000) + Express backend (port 3001)
+  - Vite proxies `/api` → `http://localhost:3001`
 
-## Deployment
+## Deployment (Production)
 
-- Target: **autoscale**
-- Build: `npm run build:prod`
+- Build: `npm run build:prod` (installs all deps + builds React to `dist/`)
 - Run: `node backend/server.js`
-- Environment variable required: `NODE_ENV=production`
+- Backend auto-detects `dist/` folder and serves frontend statically
 
-## Key Directories
+## Key Files
 
-- `src/` — React frontend source
-- `src/services/api.js` — All API calls to the backend
-- `src/contexts/` — Auth, Event, Toast contexts
-- `src/pages/` — All page components
-- `backend/server.js` — Express API server (all routes, in-memory data)
-- `public/` — Static assets
+- `vite.config.js` — port 5000, `allowedHosts: true`, proxy `/api` → port 3001
+- `package.json` — backend script forces `PORT=3001`, start script auto-installs backend deps
+- `src/services/api.js` — all API calls use `/api` base path
+- `src/contexts/AuthContext.jsx` — `isAdmin()` checks `role === 'admin'`
+- `backend/server.js` — Express + SQLite, migrations, all routes
+- `backend/events.db` — SQLite database (auto-created on first run)
 
-## Credentials (default accounts)
+## Default Admin Account
 
-- Admin: username `principal`, password `admin123`
-- Student: email `rahul@college.edu` or `priya@college.edu`, password `student123`
+- Username: `admin`, Password: `admin` (created automatically on first run)
 
 ## Features
 
-- Admin: create/manage/cancel events, track registrations, QR attendance, winner updates, certificate generation
-- Student: browse & register for events, view registrations, download certificates, profile management
-- Rate limiting, XSS sanitization, pagination on all list endpoints
-- Health check: `GET /api/health`
+### Admin
+- Create / manage / cancel events
+- Track registrations, QR attendance, winner updates, certificate generation
+- **User management**: create/edit/delete admin, teacher, coordinator & student accounts
+  - Role: Admin/Student; Designation for admins: Event Coordinator, Teacher, Department Head, Principal, Administrator
+  - Can reset user passwords from the edit modal
+- Rate limiting, XSS sanitization, pagination
 
-## Known Limitations
+### Student
+- **Self-registration** at `/student-register` (no admin needed)
+- Browse & register for events, view registrations, download certificates, profile management
 
-- Data is in-memory only — restarts clear all data created after startup
-- Authentication uses plaintext passwords (suitable for internal/demo use only)
+## Port Config (Critical for Replit)
+
+- Vite dev server MUST stay on port 5000 (`allowedHosts: true`)
+- Backend MUST stay on port 3001 in dev (`cross-env PORT=3001`)
+- After GitHub pulls: verify these ports haven't been reset by the pulled code

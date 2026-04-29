@@ -10,19 +10,31 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const DESIGNATION_OPTIONS = [
+  { value: '', label: '— None —' },
+  { value: 'Event Coordinator', label: 'Event Coordinator' },
+  { value: 'Teacher', label: 'Teacher' },
+  { value: 'Department Head', label: 'Department Head' },
+  { value: 'Principal', label: 'Principal' },
+  { value: 'Administrator', label: 'Administrator' }
+];
+
+const emptyForm = {
+  username: '',
+  password: '',
+  name: '',
+  role: 'student',
+  designation: '',
+  department: '',
+  email: ''
+};
+
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    name: '',
-    role: 'student',
-    department: '',
-    email: ''
-  });
+  const [formData, setFormData] = useState(emptyForm);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -39,29 +51,45 @@ const UserManagement = () => {
     setLoading(false);
   };
 
+  const handleChange = (field) => (e) => {
+    const val = e.target.value;
+    setFormData(prev => {
+      const updated = { ...prev, [field]: val };
+      if (field === 'role' && val === 'student') {
+        updated.designation = '';
+      }
+      return updated;
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    const response = editingUser
-      ? await api.updateUser(editingUser.id, {
-          name: formData.name,
-          department: formData.department,
-          email: formData.email
-        })
-      : await api.createUser(formData);
+    let response;
+    if (editingUser) {
+      const updatePayload = {
+        name: formData.name,
+        department: formData.department,
+        email: formData.email,
+        role: formData.role,
+        designation: formData.role === 'admin' ? formData.designation : ''
+      };
+      if (formData.password && formData.password.trim()) {
+        updatePayload.password = formData.password;
+      }
+      response = await api.updateUser(editingUser.id, updatePayload);
+    } else {
+      response = await api.createUser({
+        ...formData,
+        designation: formData.role === 'admin' ? formData.designation : ''
+      });
+    }
 
     if (response.success) {
       setShowModal(false);
       setEditingUser(null);
-      setFormData({
-        username: '',
-        password: '',
-        name: '',
-        role: 'student',
-        department: '',
-        email: ''
-      });
+      setFormData(emptyForm);
       loadUsers();
     } else {
       setError(response.error || 'Failed to save user');
@@ -75,6 +103,7 @@ const UserManagement = () => {
       password: '',
       name: user.name,
       role: user.role,
+      designation: user.designation || '',
       department: user.department || '',
       email: user.email || ''
     });
@@ -92,8 +121,21 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = filter === 'all' 
-    ? users 
+  const openCreateModal = () => {
+    setEditingUser(null);
+    setFormData(emptyForm);
+    setError('');
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingUser(null);
+    setError('');
+  };
+
+  const filteredUsers = filter === 'all'
+    ? users
     : users.filter(u => u.role === filter);
 
   if (loading) {
@@ -112,7 +154,7 @@ const UserManagement = () => {
         <main id="main-content" className="flex-1 ml-60 p-6">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
-            <p className="text-gray-600 text-sm mt-1">Create and manage admin and student accounts</p>
+            <p className="text-gray-600 text-sm mt-1">Create and manage admin, teacher, coordinator and student accounts</p>
           </div>
 
           <div className="flex justify-between items-center mb-6">
@@ -141,18 +183,7 @@ const UserManagement = () => {
                 Students
               </Button>
             </div>
-            <Button variant="primary" onClick={() => {
-              setEditingUser(null);
-              setFormData({
-                username: '',
-                password: '',
-                name: '',
-                role: 'student',
-                department: '',
-                email: ''
-              });
-              setShowModal(true);
-            }}>
+            <Button variant="primary" onClick={openCreateModal}>
               <UserPlus className="w-4 h-4 mr-2" />
               Create User
             </Button>
@@ -164,7 +195,7 @@ const UserManagement = () => {
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role / Designation</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Department</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Created</th>
@@ -181,23 +212,22 @@ const UserManagement = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${
-                          user.role === 'admin' 
-                            ? 'bg-saffron-50 text-saffron-700 border border-saffron-200' 
-                            : 'bg-primary-50 text-primary-700 border border-primary-200'
-                        }`}>
-                          {user.role === 'admin' ? (
-                            <>
-                              <Shield className="w-3 h-3 mr-1" />
-                              Admin
-                            </>
-                          ) : (
-                            <>
-                              <GraduationCap className="w-3 h-3 mr-1" />
-                              Student
-                            </>
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full w-fit ${
+                            user.role === 'admin'
+                              ? 'bg-saffron-50 text-saffron-700 border border-saffron-200'
+                              : 'bg-primary-50 text-primary-700 border border-primary-200'
+                          }`}>
+                            {user.role === 'admin' ? (
+                              <><Shield className="w-3 h-3 mr-1" />Admin</>
+                            ) : (
+                              <><GraduationCap className="w-3 h-3 mr-1" />Student</>
+                            )}
+                          </span>
+                          {user.role === 'admin' && user.designation && (
+                            <span className="text-xs text-gray-500 pl-1">{user.designation}</span>
                           )}
-                        </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{user.department || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{user.email || '-'}</td>
@@ -240,11 +270,7 @@ const UserManagement = () => {
 
           <Modal
             isOpen={showModal}
-            onClose={() => {
-              setShowModal(false);
-              setEditingUser(null);
-              setError('');
-            }}
+            onClose={closeModal}
             title={editingUser ? 'Edit User' : 'Create New User'}
           >
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -255,7 +281,7 @@ const UserManagement = () => {
                     type="text"
                     placeholder="Enter username"
                     value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    onChange={handleChange('username')}
                     required
                   />
                   <Input
@@ -263,56 +289,74 @@ const UserManagement = () => {
                     type="password"
                     placeholder="Enter password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required={!editingUser}
+                    onChange={handleChange('password')}
+                    required
                   />
                 </>
               )}
+
               <Input
                 label="Full Name"
                 type="text"
                 placeholder="Enter full name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={handleChange('name')}
                 required
               />
-              {!editingUser && (
+
+              <Select
+                label="Role"
+                value={formData.role}
+                onChange={handleChange('role')}
+                options={[
+                  { value: 'student', label: 'Student' },
+                  { value: 'admin', label: 'Admin / Staff' }
+                ]}
+                required
+              />
+
+              {formData.role === 'admin' && (
                 <Select
-                  label="Role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  options={[
-                    { value: 'student', label: 'Student' },
-                    { value: 'admin', label: 'Administrator' }
-                  ]}
-                  required
+                  label="Designation"
+                  value={formData.designation}
+                  onChange={handleChange('designation')}
+                  options={DESIGNATION_OPTIONS}
                 />
               )}
+
+              {editingUser && (
+                <Input
+                  label="New Password"
+                  type="password"
+                  placeholder="Leave blank to keep current password"
+                  value={formData.password}
+                  onChange={handleChange('password')}
+                />
+              )}
+
               <Input
                 label="Department"
                 type="text"
                 placeholder="Enter department (optional)"
                 value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                onChange={handleChange('department')}
               />
               <Input
                 label="Email"
                 type="email"
                 placeholder="Enter email (optional)"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={handleChange('email')}
               />
+
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
+
               <div className="flex space-x-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => {
-                  setShowModal(false);
-                  setEditingUser(null);
-                  setError('');
-                }}>
+                <Button type="button" variant="outline" onClick={closeModal}>
                   Cancel
                 </Button>
                 <Button type="submit" variant="primary" className="flex-1">

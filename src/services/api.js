@@ -9,6 +9,20 @@ const handleResponse = async (response) => {
 };
 
 export const api = {
+  registerStudent: async (userData) => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Register error:', error);
+      return { success: false, error: 'Failed to register. Please try again.' };
+    }
+  },
+
   loginAdmin: async (username, password) => {
     try {
       const response = await fetch(`${API_BASE}/auth/admin/login`, {

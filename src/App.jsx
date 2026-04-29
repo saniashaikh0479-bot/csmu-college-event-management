@@ -26,6 +26,7 @@ const MyCertificates = lazy(() => import('./pages/MyCertificates'));
 const StudentProfile = lazy(() => import('./pages/StudentProfile'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
+const StudentRegister = lazy(() => import('./pages/StudentRegister'));
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading, isAdmin, isStudent } = useAuth();
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/student-login" element={<StudentLogin />} />
+        <Route path="/student-register" element={<StudentRegister />} />
         
         <Route path="/admin-dashboard" element={
           <ProtectedRoute requireAdmin>
