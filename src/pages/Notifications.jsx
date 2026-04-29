@@ -1,66 +1,69 @@
-import React from 'react';
-import { Bell, Calendar, Award, CheckCircle, Clock, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Bell, Check, X, Calendar, Users, Award, Clock, CheckCircle } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import PageBackground from '../components/PageBackground';
+import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = React.useState([
-    {
-      id: 1,
-      type: 'event',
-      title: 'New Event: Tech Hackathon',
-      message: 'Registration is now open for the 24-hour coding challenge. Team size: 2-4 members.',
-      time: '2 hours ago',
-      read: false
-    },
-    {
-      id: 2,
-      type: 'reminder',
-      title: 'Event Reminder: Dance Competition',
-      message: 'Your registered event "Dance Competition" is scheduled for May 20, 2025.',
-      time: '1 day ago',
-      read: false
-    },
-    {
-      id: 3,
-      type: 'certificate',
-      title: 'Certificate Available',
-      message: 'Your participation certificate for "Workshop on AI" is now available for download.',
-      time: '3 days ago',
-      read: true
-    },
-    {
-      id: 4,
-      type: 'deadline',
-      title: 'Registration Deadline Approaching',
-      message: 'Cricket Tournament registration closes in 2 days. Register now to secure your spot!',
-      time: '5 days ago',
-      read: true
-    },
-    {
-      id: 5,
-      type: 'result',
-      title: 'Results Announced',
-      message: 'Results for the "Inter-College Cricket Tournament" have been announced. Check the dashboard.',
-      time: '1 week ago',
-      read: true
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [user]);
+
+  const loadNotifications = async () => {
+    if (!user) return;
+    setLoading(true);
+    const response = await api.getNotifications(user.id);
+    if (response.success) {
+      setNotifications(response.data);
     }
-  ]);
-
-  const markAsRead = (id) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    ));
+    setLoading(false);
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAsRead = async (id) => {
+    const response = await api.markNotificationRead(id);
+    if (response.success) {
+      setNotifications(notifications.map(n =>
+        n.id === id ? { ...n, read: 1 } : n
+      ));
+    }
   };
 
-  const deleteNotification = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const markAllAsRead = async () => {
+    if (!user) return;
+    const response = await api.markAllNotificationsRead(user.id);
+    if (response.success) {
+      setNotifications(notifications.map(n => ({ ...n, read: 1 })));
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    const response = await api.deleteNotification(id);
+    if (response.success) {
+      setNotifications(notifications.filter(n => n.id !== id));
+    }
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
   };
 
   const getIcon = (type) => {
@@ -85,14 +88,28 @@ const Notifications = () => {
     return colors[type] || 'bg-gray-50';
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => n.read === 0).length;
+
+  if (loading) {
+    return (
+      <PageBackground>
+        <Navbar />
+        <div className="flex">
+          <Sidebar />
+          <main id="main-content" className="flex-1 p-4">
+            <p className="text-gray-600">Loading notifications...</p>
+          </main>
+        </div>
+      </PageBackground>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
@@ -129,9 +146,9 @@ const Notifications = () => {
                   </tr>
                 ) : (
                   notifications.map((notification) => (
-                    <tr key={notification.id} className={`border-b border-gray-300 hover:bg-gray-50 ${!notification.read ? 'bg-blue-50' : ''}`}>
+                    <tr key={notification.id} className={`border-b border-gray-300 hover:bg-gray-50 ${notification.read === 0 ? 'bg-blue-50' : ''}`}>
                       <td className="px-4 py-2">
-                        {!notification.read && (
+                        {notification.read === 0 && (
                           <div className="w-2 h-2 bg-primary-600 rounded-full" />
                         )}
                       </td>
@@ -142,10 +159,10 @@ const Notifications = () => {
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-900">{notification.title}</td>
                       <td className="px-4 py-2 text-sm text-gray-700 max-w-xs">{notification.message}</td>
-                      <td className="px-4 py-2 text-sm text-gray-600">{notification.time}</td>
+                      <td className="px-4 py-2 text-sm text-gray-600">{formatTime(notification.created_at)}</td>
                       <td className="px-4 py-2">
                         <div className="flex space-x-2">
-                          {!notification.read && (
+                          {notification.read === 0 && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -171,7 +188,7 @@ const Notifications = () => {
           </div>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

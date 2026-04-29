@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { UserPlus, Edit2, Trash2, Shield, GraduationCap } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, Shield, GraduationCap, Users } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
@@ -9,6 +9,7 @@ import Modal from '../components/Modal';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageBackground from '../components/PageBackground';
 
 const DESIGNATION_OPTIONS = [
   { value: '', label: '— None —' },
@@ -58,6 +59,9 @@ const UserManagement = () => {
       if (field === 'role' && val === 'student') {
         updated.designation = '';
       }
+      if (field === 'role' && val === 'coordinator') {
+        updated.designation = 'Event Coordinator';
+      }
       return updated;
     });
   };
@@ -73,7 +77,7 @@ const UserManagement = () => {
         department: formData.department,
         email: formData.email,
         role: formData.role,
-        designation: formData.role === 'admin' ? formData.designation : ''
+        designation: (formData.role === 'admin' || formData.role === 'coordinator') ? formData.designation : ''
       };
       if (formData.password && formData.password.trim()) {
         updatePayload.password = formData.password;
@@ -82,7 +86,7 @@ const UserManagement = () => {
     } else {
       response = await api.createUser({
         ...formData,
-        designation: formData.role === 'admin' ? formData.designation : ''
+        designation: (formData.role === 'admin' || formData.role === 'coordinator') ? formData.designation : ''
       });
     }
 
@@ -147,11 +151,11 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-6">
+        <main id="main-content" className="flex-1 p-6">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
             <p className="text-gray-600 text-sm mt-1">Create and manage admin, teacher, coordinator and student accounts</p>
@@ -173,6 +177,14 @@ const UserManagement = () => {
               >
                 <Shield className="w-4 h-4 mr-1" />
                 Admins
+              </Button>
+              <Button
+                variant={filter === 'coordinator' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setFilter('coordinator')}
+              >
+                <Users className="w-4 h-4 mr-1" />
+                Coordinators
               </Button>
               <Button
                 variant={filter === 'student' ? 'primary' : 'outline'}
@@ -216,15 +228,19 @@ const UserManagement = () => {
                           <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full w-fit ${
                             user.role === 'admin'
                               ? 'bg-saffron-50 text-saffron-700 border border-saffron-200'
+                              : user.role === 'coordinator'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
                               : 'bg-primary-50 text-primary-700 border border-primary-200'
                           }`}>
                             {user.role === 'admin' ? (
                               <><Shield className="w-3 h-3 mr-1" />Admin</>
+                            ) : user.role === 'coordinator' ? (
+                              <><Users className="w-3 h-3 mr-1" />Coordinator</>
                             ) : (
                               <><GraduationCap className="w-3 h-3 mr-1" />Student</>
                             )}
                           </span>
-                          {user.role === 'admin' && user.designation && (
+                          {(user.role === 'admin' || user.role === 'coordinator') && user.designation && (
                             <span className="text-xs text-gray-500 pl-1">{user.designation}</span>
                           )}
                         </div>
@@ -232,7 +248,7 @@ const UserManagement = () => {
                       <td className="px-4 py-3 text-sm text-gray-600">{user.department || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{user.email || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {new Date(user.created_at).toLocaleDateString()}
+                        {new Date(user.createdAt || user.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex space-x-2">
@@ -310,12 +326,13 @@ const UserManagement = () => {
                 onChange={handleChange('role')}
                 options={[
                   { value: 'student', label: 'Student' },
-                  { value: 'admin', label: 'Admin / Staff' }
+                  { value: 'admin', label: 'Admin / Staff' },
+                  { value: 'coordinator', label: 'Event Coordinator' }
                 ]}
                 required
               />
 
-              {formData.role === 'admin' && (
+              {(formData.role === 'admin' || formData.role === 'coordinator') && (
                 <Select
                   label="Designation"
                   value={formData.designation}
@@ -367,7 +384,7 @@ const UserManagement = () => {
           </Modal>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

@@ -8,6 +8,7 @@ import Card from '../components/Card';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PageBackground from '../components/PageBackground';
 
 const EditEvent = () => {
   const { id } = useParams();
@@ -68,11 +69,11 @@ const EditEvent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">Edit Event</h1>
             <p className="text-gray-600 text-sm mt-1">Update event details</p>
@@ -190,7 +191,6 @@ const EditEvent = () => {
           </Card>
         </main>
       </div>
-      
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -201,7 +201,7 @@ const EditEvent = () => {
         cancelText="Cancel"
         variant="danger"
       />
-    </div>
+    </PageBackground>
   );
 };
 

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { Trophy, Medal, Award, ArrowLeft, Save } from 'lucide-react';
+import { Trophy, ArrowLeft, Medal, Award, Save } from 'lucide-react';
 import Card from '../components/Card';
-import Input from '../components/Input';
 import Button from '../components/Button';
+import Input from '../components/Input';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import PageBackground from '../components/PageBackground';
 
 const WinnerUpdate = () => {
   const { eventId } = useParams();
@@ -71,11 +72,11 @@ const WinnerUpdate = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin-dashboard')}
@@ -189,7 +190,7 @@ const WinnerUpdate = () => {
           </div>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

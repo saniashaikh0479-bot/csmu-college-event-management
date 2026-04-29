@@ -28,12 +28,16 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const StudentRegister = lazy(() => import('./pages/StudentRegister'));
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { user, loading, isAdmin, isStudent } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin = false, requireSuperAdmin = false, requireEventAccess = false }) => {
+  const { user, loading, isAdmin, isStudent, isSuperAdmin, canManageEvents } = useAuth();
   
   if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-50"><div className="text-gray-600">Loading...</div></div>;
   
   if (!user) return <Navigate to="/" replace />;
+  
+  if (requireSuperAdmin && !isSuperAdmin()) return <Navigate to="/admin-dashboard" replace />;
+  
+  if (requireEventAccess && !canManageEvents()) return <Navigate to="/student-dashboard" replace />;
   
   if (requireAdmin && !isAdmin()) return <Navigate to="/student-dashboard" replace />;
   
@@ -50,7 +54,7 @@ function AppRoutes() {
         <Route path="/student-register" element={<StudentRegister />} />
         
         <Route path="/admin-dashboard" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <AdminDashboard />
           </ProtectedRoute>
         } />
@@ -62,13 +66,13 @@ function AppRoutes() {
         } />
         
         <Route path="/create-event" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <CreateEvent />
           </ProtectedRoute>
         } />
         
         <Route path="/edit-event/:id" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <EditEvent />
           </ProtectedRoute>
         } />
@@ -86,25 +90,25 @@ function AppRoutes() {
         } />
         
         <Route path="/participants/:eventId" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <ParticipantManagement />
           </ProtectedRoute>
         } />
         
         <Route path="/attendance/:eventId" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <QRAttendance />
           </ProtectedRoute>
         } />
         
         <Route path="/winners/:eventId" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <WinnerUpdate />
           </ProtectedRoute>
         } />
         
         <Route path="/certificates/:eventId" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <CertificateGeneration />
           </ProtectedRoute>
         } />
@@ -123,25 +127,25 @@ function AppRoutes() {
 
         {/* Admin event selection pages (no eventId) */}
         <Route path="/participants" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <EventSelect title="Participant Management" description="Select an event to view participants" actionLabel="View Participants" actionPath="/participants" />
           </ProtectedRoute>
         } />
 
         <Route path="/attendance" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <EventSelect title="QR Attendance" description="Select an event to manage attendance" actionLabel="Mark Attendance" actionPath="/attendance" />
           </ProtectedRoute>
         } />
 
         <Route path="/winners" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <EventSelect title="Update Winners" description="Select an event to record winners" actionLabel="Update Winners" actionPath="/winners" />
           </ProtectedRoute>
         } />
 
         <Route path="/certificates" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireEventAccess>
             <EventSelect title="Certificate Generation" description="Select an event to generate certificates" actionLabel="Generate Certificates" actionPath="/certificates" />
           </ProtectedRoute>
         } />
@@ -166,7 +170,7 @@ function AppRoutes() {
         } />
 
         <Route path="/user-management" element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireSuperAdmin>
             <UserManagement />
           </ProtectedRoute>
         } />

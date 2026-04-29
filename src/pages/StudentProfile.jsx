@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Building, Phone, Edit, LogOut } from 'lucide-react';
+import { api } from '../services/api';
+import { User, Mail, Phone, MapPin, LogOut, Edit, Building } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import PageBackground from '../components/PageBackground';
 import Modal from '../components/Modal';
 
 const StudentProfile = () => {
@@ -29,11 +31,11 @@ const StudentProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
             <p className="text-gray-600 text-sm mt-1">Manage your account settings</p>
@@ -167,7 +169,7 @@ const StudentProfile = () => {
           </Modal>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

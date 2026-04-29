@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageBackground from '../components/PageBackground';
 import { getTypeColor } from '../utils/colors';
 
 const AdminDashboard = () => {
@@ -57,13 +58,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-6">
+        <main id="main-content" className="flex-1 p-6">
           <div className="mb-4">
-            <h1 className="text-2xl font-semibold text-gray-900">Administrator Dashboard</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Admin & Coordinator Dashboard</h1>
             <p className="text-gray-600 text-sm mt-1">Manage events and track registrations</p>
           </div>
 
@@ -204,7 +205,7 @@ const AdminDashboard = () => {
           </div>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

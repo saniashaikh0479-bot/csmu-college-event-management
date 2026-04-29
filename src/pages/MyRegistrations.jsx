@@ -8,12 +8,12 @@ import Sidebar from '../components/Sidebar';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageBackground from '../components/PageBackground';
 import { getTypeColor } from '../utils/colors';
 
 const MyRegistrations = () => {
   const { user } = useAuth();
   const [registrations, setRegistrations] = useState([]);
-  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,23 +24,12 @@ const MyRegistrations = () => {
     if (!user) return;
     setLoading(true);
     
-    const [regsRes, eventsRes] = await Promise.all([
-      api.getRegistrationsByStudent(user.id),
-      api.getEvents()
-    ]);
+    const regsRes = await api.getRegistrationsByStudent(user.id);
     
     if (regsRes.success) {
       setRegistrations(regsRes.data);
     }
-    if (eventsRes.success) {
-      setEvents(eventsRes.data);
-    }
     setLoading(false);
-  };
-
-
-  const getEventForReg = (eventId) => {
-    return events.find(e => e.id === eventId);
   };
 
   if (loading) {
@@ -52,11 +41,11 @@ const MyRegistrations = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">My Registrations</h1>
             <p className="text-gray-600 text-sm mt-1">Events you have registered for</p>
@@ -88,17 +77,15 @@ const MyRegistrations = () => {
                 </thead>
                 <tbody>
                   {registrations.map((reg) => {
-                    const event = getEventForReg(reg.eventId);
-                    if (!event) return null;
                     return (
                       <tr key={reg.id} className="border-b border-gray-300 hover:bg-gray-50">
-                        <td className="px-4 py-2 text-sm text-gray-900">{event.name}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900">{reg.eventName || 'Unknown Event'}</td>
                         <td className="px-4 py-2">
-                          <span className={`px-2 py-1 text-xs font-medium border ${getTypeColor(event.type)}`}>
-                            {event.type}
+                          <span className={`px-2 py-1 text-xs font-medium border ${getTypeColor(reg.eventType)}`}>
+                            {reg.eventType}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{event.date}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{reg.eventDate}</td>
                         <td className="px-4 py-2 text-sm text-gray-700">{reg.teamName}</td>
                         <td className="px-4 py-2 text-sm text-gray-700">{reg.department}</td>
                         <td className="px-4 py-2">
@@ -107,7 +94,7 @@ const MyRegistrations = () => {
                           </span>
                         </td>
                         <td className="px-4 py-2">
-                          <Link to={`/event/${event.id}`}>
+                          <Link to={`/event/${reg.eventId}`}>
                             <Button variant="outline" size="sm">View Event</Button>
                           </Link>
                         </td>
@@ -120,7 +107,7 @@ const MyRegistrations = () => {
           )}
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

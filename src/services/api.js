@@ -200,6 +200,53 @@ export const api = {
     }
   },
 
+  // Notification endpoints
+  getNotifications: async (userId) => {
+    try {
+      const response = await fetch(`${API_BASE}/notifications/${userId}`);
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Get notifications error:', error);
+      return { success: false, error: 'Failed to load notifications. Please try again.' };
+    }
+  },
+
+  markNotificationRead: async (notificationId) => {
+    try {
+      const response = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+        method: 'PUT'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Mark notification read error:', error);
+      return { success: false, error: 'Failed to update notification. Please try again.' };
+    }
+  },
+
+  markAllNotificationsRead: async (userId) => {
+    try {
+      const response = await fetch(`${API_BASE}/notifications/${userId}/read-all`, {
+        method: 'PUT'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Mark all notifications read error:', error);
+      return { success: false, error: 'Failed to update notifications. Please try again.' };
+    }
+  },
+
+  deleteNotification: async (notificationId) => {
+    try {
+      const response = await fetch(`${API_BASE}/notifications/${notificationId}`, {
+        method: 'DELETE'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Delete notification error:', error);
+      return { success: false, error: 'Failed to delete notification. Please try again.' };
+    }
+  },
+
   // User management endpoints
   getUsers: async () => {
     try {

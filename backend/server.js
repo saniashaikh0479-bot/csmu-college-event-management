@@ -34,7 +34,7 @@ const limiter = rateLimit({
 // Stricter rate limiting for auth endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
+  max: 20, // limit each IP to 20 auth requests per windowMs
   message: { success: false, error: 'Too many login attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false
@@ -49,7 +49,7 @@ function initializeDatabase() {
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('admin', 'student')),
+      role TEXT NOT NULL CHECK(role IN ('admin', 'student', 'coordinator')),
       department TEXT,
       email TEXT UNIQUE,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -70,7 +70,7 @@ function initializeDatabase() {
       rules TEXT NOT NULL,
       contact TEXT NOT NULL,
       type TEXT NOT NULL,
-      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled')),
+      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled', 'completed')),
       created_by INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       cancelled_at DATETIME,
@@ -103,10 +103,24 @@ function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       event_id INTEGER NOT NULL,
       student_id INTEGER NOT NULL,
-      type TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'participation',
       issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-      FOREIGN KEY (student_id) REFERENCES users(id)
+      FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Notifications table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 
@@ -129,6 +143,27 @@ function runMigrations() {
   } catch (e) {
     // Column already exists — safe to ignore
   }
+  try {
+    db.exec(`ALTER TABLE registrations ADD COLUMN performance_type TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE registrations ADD COLUMN song_name TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE events ADD COLUMN winner TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE events ADD COLUMN runner_up TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE events ADD COLUMN special_award TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE events ADD COLUMN special_award_recipient TEXT`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE events ADD COLUMN status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled', 'completed'))`);
+  } catch (e) {}
 }
 runMigrations();
 
@@ -289,7 +324,7 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/auth/admin/login', authLimiter, (req, res) => {
   const { username, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE username = ? AND role = ?').get(username, 'admin');
+  const user = db.prepare('SELECT * FROM users WHERE username = ? AND role IN (?, ?)').get(username, 'admin', 'coordinator');
   if (user && user.password === password) {
     const { password: _, ...userWithoutPassword } = user;
     res.json({ success: true, user: userWithoutPassword });
@@ -313,11 +348,17 @@ app.post('/api/auth/student/login', authLimiter, (req, res) => {
 
 app.get('/api/events', (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = parseInt(req.query.limit) || 0; // 0 means return all
   const offset = (page - 1) * limit;
   
-  const events = db.prepare('SELECT * FROM events ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
-  const total = db.prepare('SELECT COUNT(*) as count FROM events').get().count;
+  let events, total;
+  total = db.prepare('SELECT COUNT(*) as count FROM events').get().count;
+  
+  if (limit > 0) {
+    events = db.prepare('SELECT * FROM events ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+  } else {
+    events = db.prepare('SELECT * FROM events ORDER BY created_at DESC').all();
+  }
   
   res.json({ 
     success: true, 
@@ -328,13 +369,17 @@ app.get('/api/events', (req, res) => {
       registeredTeams: e.registered_teams,
       createdAt: e.created_at,
       cancelledAt: e.cancelled_at,
-      cancellationReason: e.cancellation_reason
+      cancellationReason: e.cancellation_reason,
+      winner: e.winner,
+      runnerUp: e.runner_up,
+      specialAward: e.special_award,
+      specialAwardRecipient: e.special_award_recipient
     })),
     pagination: {
       page,
-      limit,
+      limit: limit || total,
       total,
-      totalPages: Math.ceil(total / limit)
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1
     }
   });
 });
@@ -349,7 +394,11 @@ app.get('/api/events/:id', (req, res) => {
       registeredTeams: event.registered_teams,
       createdAt: event.created_at,
       cancelledAt: event.cancelled_at,
-      cancellationReason: event.cancellation_reason
+      cancellationReason: event.cancellation_reason,
+      winner: event.winner,
+      runnerUp: event.runner_up,
+      specialAward: event.special_award,
+      specialAwardRecipient: event.special_award_recipient
     }});
   } else {
     res.json({ success: false, error: 'Event not found' });
@@ -400,17 +449,23 @@ app.put('/api/events/:id', (req, res) => {
   
   db.prepare(`
     UPDATE events SET name = ?, date = ?, venue = ?, team_size = ?, max_teams = ?, 
-    deadline = ?, rules = ?, contact = ?, type = ? WHERE id = ?
+    deadline = ?, rules = ?, contact = ?, type = ?, status = ?, winner = ?, runner_up = ?, 
+    special_award = ?, special_award_recipient = ? WHERE id = ?
   `).run(
-    sanitizedBody.name,
-    sanitizedBody.date,
-    sanitizedBody.venue,
-    sanitizedBody.teamSize,
-    sanitizedBody.maxTeams,
-    sanitizedBody.deadline,
-    sanitizedBody.rules,
-    sanitizedBody.contact,
-    sanitizedBody.type,
+    sanitizedBody.name || existing.name,
+    sanitizedBody.date || existing.date,
+    sanitizedBody.venue || existing.venue,
+    sanitizedBody.teamSize || existing.team_size,
+    sanitizedBody.maxTeams || existing.max_teams,
+    sanitizedBody.deadline || existing.deadline,
+    sanitizedBody.rules || existing.rules,
+    sanitizedBody.contact || existing.contact,
+    sanitizedBody.type || existing.type,
+    sanitizedBody.status || existing.status,
+    sanitizedBody.winner !== undefined ? sanitizedBody.winner : existing.winner,
+    sanitizedBody.runnerUp !== undefined ? sanitizedBody.runnerUp : existing.runner_up,
+    sanitizedBody.specialAward !== undefined ? sanitizedBody.specialAward : existing.special_award,
+    sanitizedBody.specialAwardRecipient !== undefined ? sanitizedBody.specialAwardRecipient : existing.special_award_recipient,
     req.params.id
   );
   
@@ -420,7 +475,13 @@ app.put('/api/events/:id', (req, res) => {
     teamSize: updated.team_size,
     maxTeams: updated.max_teams,
     registeredTeams: updated.registered_teams,
-    createdAt: updated.created_at
+    createdAt: updated.created_at,
+    cancelledAt: updated.cancelled_at,
+    cancellationReason: updated.cancellation_reason,
+    winner: updated.winner,
+    runnerUp: updated.runner_up,
+    specialAward: updated.special_award,
+    specialAwardRecipient: updated.special_award_recipient
   }});
 });
 
@@ -462,7 +523,7 @@ app.put('/api/events/:id/cancel', (req, res) => {
 app.get('/api/registrations', (req, res) => {
   const { eventId } = req.query;
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = parseInt(req.query.limit) || 0;
   const offset = (page - 1) * limit;
   
   let query = 'SELECT r.*, e.name as event_name, u.name as student_name FROM registrations r JOIN events e ON r.event_id = e.id JOIN users u ON r.student_id = u.id';
@@ -473,11 +534,6 @@ app.get('/api/registrations', (req, res) => {
     params.push(eventId);
   }
   
-  query += ' ORDER BY r.registered_at DESC LIMIT ? OFFSET ?';
-  params.push(limit, offset);
-  
-  const registrations = db.prepare(query).all(...params);
-  
   // Get total count
   let countQuery = 'SELECT COUNT(*) as count FROM registrations';
   let countParams = [];
@@ -487,6 +543,15 @@ app.get('/api/registrations', (req, res) => {
   }
   const total = db.prepare(countQuery).get(...countParams)?.count || 0;
   
+  if (limit > 0) {
+    query += ' ORDER BY r.registered_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+  } else {
+    query += ' ORDER BY r.registered_at DESC';
+  }
+  
+  const registrations = db.prepare(query).all(...params);
+  
   res.json({ 
     success: true,
     data: registrations.map(r => ({
@@ -495,15 +560,19 @@ app.get('/api/registrations', (req, res) => {
       studentId: r.student_id,
       teamName: r.team_name,
       captainName: r.captain_name,
+      department: r.department,
+      contact: r.contact,
+      members: r.members,
+      attended: r.attended ? true : false,
       registeredAt: r.registered_at,
       eventName: r.event_name,
       studentName: r.student_name
     })),
     pagination: {
       page,
-      limit,
+      limit: limit || total,
       total,
-      totalPages: Math.ceil(total / limit)
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1
     }
   });
 });
@@ -523,6 +592,10 @@ app.get('/api/registrations/student/:studentId', (req, res) => {
     studentId: r.student_id,
     teamName: r.team_name,
     captainName: r.captain_name,
+    department: r.department,
+    contact: r.contact,
+    members: r.members,
+    attended: r.attended ? true : false,
     registeredAt: r.registered_at,
     eventName: r.event_name,
     eventDate: r.event_date,
@@ -557,8 +630,8 @@ app.post('/api/registrations', (req, res) => {
   }
   
   const result = db.prepare(`
-    INSERT INTO registrations (event_id, student_id, team_name, captain_name, members, department, contact)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO registrations (event_id, student_id, team_name, captain_name, members, department, contact, performance_type, song_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     eventId,
     studentId,
@@ -566,7 +639,9 @@ app.post('/api/registrations', (req, res) => {
     sanitizedBody.captainName,
     JSON.stringify(sanitizedBody.members),
     sanitizedBody.department,
-    sanitizedBody.contact
+    sanitizedBody.contact,
+    sanitizedBody.performanceType || null,
+    sanitizedBody.songName || null
   );
   
   // Update event registered count
@@ -580,7 +655,9 @@ app.post('/api/registrations', (req, res) => {
     teamName: newRegistration.team_name,
     captainName: newRegistration.captain_name,
     members: JSON.parse(newRegistration.members),
-    registeredAt: newRegistration.registered_at
+    registeredAt: newRegistration.registered_at,
+    performanceType: newRegistration.performance_type,
+    songName: newRegistration.song_name
   }});
 });
 
@@ -610,23 +687,29 @@ app.put('/api/registrations/:id/attendance', (req, res) => {
 // Get all users (admin only)
 app.get('/api/users', (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = parseInt(req.query.limit) || 0;
   const offset = (page - 1) * limit;
   
-  const users = db.prepare('SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+  let users;
   const total = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+  
+  if (limit > 0) {
+    users = db.prepare('SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, offset);
+  } else {
+    users = db.prepare('SELECT * FROM users ORDER BY created_at DESC').all();
+  }
   
   res.json({ 
     success: true, 
     data: users.map(u => {
       const { password, ...userWithoutPassword } = u;
-      return userWithoutPassword;
+      return { ...userWithoutPassword, createdAt: userWithoutPassword.created_at };
     }),
     pagination: {
       page,
-      limit,
+      limit: limit || total,
       total,
-      totalPages: Math.ceil(total / limit)
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1
     }
   });
 });
@@ -685,8 +768,8 @@ app.post('/api/users', (req, res) => {
     return res.json({ success: false, error: 'Username, password, name, and role are required' });
   }
   
-  if (!['admin', 'student'].includes(role)) {
-    return res.json({ success: false, error: 'Role must be either admin or student' });
+  if (!['admin', 'student', 'coordinator'].includes(role)) {
+    return res.json({ success: false, error: 'Role must be admin, student, or coordinator' });
   }
   
   // Check for duplicate username
@@ -727,8 +810,8 @@ app.put('/api/users/:id', (req, res) => {
     return res.json({ success: false, error: 'Cannot change super admin role' });
   }
 
-  if (role && !['admin', 'student'].includes(role)) {
-    return res.json({ success: false, error: 'Role must be either admin or student' });
+  if (role && !['admin', 'student', 'coordinator'].includes(role)) {
+    return res.json({ success: false, error: 'Role must be admin, student, or coordinator' });
   }
   
   // Check for duplicate email if updating
@@ -775,7 +858,7 @@ app.delete('/api/users/:id', (req, res) => {
 
 app.get('/api/certificates/student/:studentId', (req, res) => {
   const certificates = db.prepare(`
-    SELECT c.*, e.name as event_name, e.date as event_date
+    SELECT c.*, e.name as event_name, e.date as event_date, e.venue as event_venue, e.type as event_type
     FROM certificates c 
     JOIN events e ON c.event_id = e.id 
     WHERE c.student_id = ?
@@ -788,6 +871,8 @@ app.get('/api/certificates/student/:studentId', (req, res) => {
     studentId: c.student_id,
     eventName: c.event_name,
     eventDate: c.event_date,
+    eventVenue: c.event_venue,
+    eventType: c.event_type,
     issuedAt: c.issued_at
   })) });
 });
@@ -805,6 +890,37 @@ app.post('/api/certificates', (req, res) => {
     studentId: newCertificate.student_id,
     issuedAt: newCertificate.issued_at
   }});
+});
+
+// ============ NOTIFICATIONS ROUTES ============
+
+app.get('/api/notifications/:userId', (req, res) => {
+  const userId = parseInt(req.params.userId);
+  const notifications = db.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+  res.json({ success: true, data: notifications });
+});
+
+app.put('/api/notifications/:id/read', (req, res) => {
+  const result = db.prepare('UPDATE notifications SET read = 1 WHERE id = ?').run(req.params.id);
+  if (result.changes > 0) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, error: 'Notification not found' });
+  }
+});
+
+app.put('/api/notifications/:userId/read-all', (req, res) => {
+  const result = db.prepare('UPDATE notifications SET read = 1 WHERE user_id = ?').run(req.params.userId);
+  res.json({ success: true });
+});
+
+app.delete('/api/notifications/:id', (req, res) => {
+  const result = db.prepare('DELETE FROM notifications WHERE id = ?').run(req.params.id);
+  if (result.changes > 0) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, error: 'Notification not found' });
+  }
 });
 
 // Serve static frontend when dist folder exists (production build)

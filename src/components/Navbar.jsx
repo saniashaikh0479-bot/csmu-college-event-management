@@ -5,7 +5,7 @@ import { LogOut, Bell } from 'lucide-react';
 import Button from './Button';
 
 const Navbar = () => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, canManageEvents } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -18,12 +18,10 @@ const Navbar = () => {
       <div className="px-6">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to={isAdmin() ? '/admin-dashboard' : '/student-dashboard'} className="flex items-center space-x-3" aria-label="Go to dashboard">
-              <div className="w-9 h-9 bg-primary-900 rounded-lg flex items-center justify-center">
-                <span className="text-white font-extrabold text-xs tracking-wider">CSMU</span>
-              </div>
+            <Link to={canManageEvents() ? '/admin-dashboard' : '/student-dashboard'} className="flex items-center space-x-3" aria-label="Go to dashboard">
+              <img src="/Logo.jpeg" alt="CSMU Logo" className="w-9 h-9 rounded-lg object-cover" />
               <div>
-                <span className="text-sm font-bold text-primary-900">Chhatrapati Shivaji Maharaj University</span>
+                <span className="text-base font-bold text-primary-900">Chhatrapati Shivaji Maharaj University</span>
                 <span className="text-gray-400 text-xs ml-2 hidden md:inline">Event Management</span>
               </div>
             </Link>
@@ -32,7 +30,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {user && (
               <>
-                {isAdmin() && (
+                {canManageEvents() && (
                   <Link to="/create-event" aria-label="Create new event">
                     <Button variant="primary" size="sm">Create Event</Button>
                   </Link>

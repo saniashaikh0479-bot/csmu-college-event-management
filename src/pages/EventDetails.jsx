@@ -7,11 +7,12 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import PageBackground from '../components/PageBackground';
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, canManageEvents } = useAuth();
   const [event, setEvent] = useState(null);
   const [registration, setRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,14 +64,14 @@ const EventDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <Button
             variant="ghost"
-            onClick={() => navigate(isAdmin() ? '/admin-dashboard' : '/student-dashboard')}
+            onClick={() => navigate(canManageEvents() ? '/admin-dashboard' : '/student-dashboard')}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -161,12 +162,12 @@ const EventDetails = () => {
                 )}
 
                 <div className="flex justify-end space-x-4 pt-4 border-t border-gray-300">
-                  {!isAdmin() && !registration && event.registeredTeams < event.maxTeams && (
+                  {!canManageEvents() && !registration && event.registeredTeams < event.maxTeams && (
                     <Button onClick={() => navigate(`/register/${event.id}`)}>
                       Register Now
                     </Button>
                   )}
-                  {isAdmin() && (
+                  {canManageEvents() && (
                     <>
                       <Button variant="secondary" onClick={() => navigate(`/participants/${event.id}`)}>
                         View Participants
@@ -182,7 +183,7 @@ const EventDetails = () => {
           </div>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

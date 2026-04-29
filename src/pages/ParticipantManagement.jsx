@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { Search, Download, ArrowLeft, Filter } from 'lucide-react';
+import { Users, Search, Download } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import LoadingSpinner from '../components/LoadingSpinner';
+import PageBackground from '../components/PageBackground';
 
 const ParticipantManagement = () => {
   const { eventId } = useParams();
@@ -74,11 +76,11 @@ const ParticipantManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin-dashboard')}
@@ -148,7 +150,7 @@ const ParticipantManagement = () => {
                       <td className="px-4 py-2 text-sm text-gray-700">{participant.captainName}</td>
                       <td className="px-4 py-2 text-sm text-gray-700">{participant.department}</td>
                       <td className="px-4 py-2 text-sm text-gray-700">{participant.contact}</td>
-                      <td className="px-4 py-2 text-sm text-gray-700">{participant.members?.length || 0}</td>
+                      <td className="px-4 py-2 text-sm text-gray-700">{Array.isArray(participant.members) ? participant.members.length : (JSON.parse(participant.members || '[]').length)}</td>
                       <td className="px-4 py-2">
                         <span className={`px-2 py-1 text-xs font-medium border ${participant.attended ? 'bg-green-50 text-green-700 border-green-300' : 'bg-gray-50 text-gray-700 border-gray-300'}`}>
                           {participant.attended ? 'Attended' : 'Not Attended'}
@@ -171,7 +173,7 @@ const ParticipantManagement = () => {
           </div>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

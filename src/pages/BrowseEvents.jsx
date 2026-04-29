@@ -9,6 +9,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageBackground from '../components/PageBackground';
 import { getTypeColor } from '../utils/colors';
 
 const BrowseEvents = () => {
@@ -47,7 +48,7 @@ const BrowseEvents = () => {
     event.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const availableEvents = filteredEvents.filter(event => event.registeredTeams < event.maxTeams);
+  const availableEvents = filteredEvents.filter(event => event.registeredTeams < event.maxTeams && event.status === 'active');
 
   if (loading) {
     return (
@@ -58,11 +59,11 @@ const BrowseEvents = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">Browse Events</h1>
             <p className="text-gray-600 text-sm mt-1">Discover and register for upcoming events</p>
@@ -127,7 +128,7 @@ const BrowseEvents = () => {
           )}
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 

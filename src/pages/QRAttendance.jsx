@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { QrCode, CheckCircle, XCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import { QrCode, CheckCircle, XCircle, ArrowLeft, RefreshCw, Camera } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PageBackground from '../components/PageBackground';
 
 const QRAttendance = () => {
   const { eventId } = useParams();
@@ -86,11 +87,11 @@ const QRAttendance = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin-dashboard')}
@@ -281,7 +282,7 @@ const QRAttendance = () => {
         cancelText="Cancel"
         variant={pendingAttendance?.attended ? "primary" : "danger"}
       />
-    </div>
+    </PageBackground>
   );
 };
 

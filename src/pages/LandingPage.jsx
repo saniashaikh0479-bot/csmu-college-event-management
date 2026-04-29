@@ -1,8 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, GraduationCap, Calendar, Users, Award, ArrowRight, QrCode, BookOpen, Trophy, ChevronRight } from 'lucide-react';
+import { Shield, GraduationCap, Calendar, Users, Award, ArrowRight, QrCode, BookOpen, Trophy, ChevronRight, MapPin, Clock } from 'lucide-react';
+import { api } from '../services/api';
 
 const LandingPage = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    const response = await api.getEvents();
+    if (response.success) {
+      setEvents(response.data);
+    }
+    setLoading(false);
+  };
+
+  const getTypeColor = (type) => {
+    const colors = {
+      sports: 'bg-green-50 text-green-700 border-green-300',
+      cultural: 'bg-purple-50 text-purple-700 border-purple-300',
+      technical: 'bg-blue-50 text-blue-700 border-blue-300',
+      workshop: 'bg-yellow-50 text-yellow-700 border-yellow-300'
+    };
+    return colors[type] || 'bg-gray-50 text-gray-700 border-gray-300';
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Top Accent Bar */}
@@ -12,18 +38,15 @@ const LandingPage = () => {
       <nav className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-900 rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-white font-extrabold text-sm tracking-wider">CSMU</span>
-            </div>
+            <img src="/Logo.jpeg" alt="CSMU Logo" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
             <div>
               <h1 className="text-primary-900 text-base font-bold leading-tight">Chhatrapati Shivaji Maharaj University</h1>
               <p className="text-gray-400 text-xs tracking-wide">Event Management Portal</p>
             </div>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <span className="text-gray-500 text-sm hover:text-primary-700 transition-colors cursor-pointer">About CSMU</span>
-            <span className="text-gray-500 text-sm hover:text-primary-700 transition-colors cursor-pointer">Events</span>
-            <span className="text-gray-500 text-sm hover:text-primary-700 transition-colors cursor-pointer">Contact</span>
+            <a href="https://csmu.ac.in/" target="_blank" rel="noopener noreferrer" className="text-gray-500 text-sm hover:text-primary-700 transition-colors">About CSMU</a>
+            <a href="#events" className="text-gray-500 text-sm hover:text-primary-700 transition-colors">Events</a>
             <div className="bg-primary-50 text-primary-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-primary-100">
               Academic Year 2026-27
             </div>
@@ -50,7 +73,7 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/admin-login" className="inline-flex items-center justify-center space-x-2 bg-saffron-500 hover:bg-saffron-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-lg shadow-saffron-500/25">
                   <Shield className="w-5 h-5" />
-                  <span>Administrator Login</span>
+                  <span>Admin / Coordinator Login</span>
                 </Link>
                 <Link to="/student-login" className="inline-flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-lg border border-white/20 transition-colors">
                   <GraduationCap className="w-5 h-5" />
@@ -72,8 +95,8 @@ const LandingPage = () => {
                     <Shield className="w-6 h-6 text-saffron-600" />
                   </div>
                   <div>
-                    <h3 className="text-gray-900 text-lg font-bold">Administrator</h3>
-                    <p className="text-gray-400 text-sm">Event Coordinators & Department Heads</p>
+                    <h3 className="text-gray-900 text-lg font-bold">Admin & Coordinator</h3>
+                    <p className="text-gray-400 text-sm">Administrators, Staff & Event Coordinators</p>
                   </div>
                 </div>
                 
@@ -97,7 +120,7 @@ const LandingPage = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <span className="text-saffron-600 font-semibold text-sm">Login as Administrator</span>
+                  <span className="text-saffron-600 font-semibold text-sm">Login as Admin / Coordinator</span>
                   <ChevronRight className="w-4 h-4 text-saffron-500 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
@@ -144,6 +167,66 @@ const LandingPage = () => {
           </div>
         </div>
 
+        {/* Public Events Section */}
+        <div id="events" className="max-w-7xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Upcoming Events</h3>
+            <p className="text-gray-500 max-w-lg mx-auto">Browse and discover events happening at CSMU</p>
+          </div>
+          
+          {loading ? (
+            <div className="text-center text-gray-500 py-8">Loading events...</div>
+          ) : events.filter(e => e.status === 'active').length === 0 ? (
+            <div className="text-center text-gray-500 py-8">No events available at the moment.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.filter(e => e.status === 'active').map((event) => (
+                <div key={event.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-primary-200 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className={`px-3 py-1 text-xs font-medium border ${getTypeColor(event.type)}`}>
+                      {event.type}
+                    </span>
+                    <span className={`px-3 py-1 text-xs font-medium border ${event.status === 'active' ? 'bg-green-50 text-green-700 border-green-300' : 'bg-gray-50 text-gray-700 border-gray-300'}`}>
+                      {event.status}
+                    </span>
+                  </div>
+                  
+                  <h4 className="text-lg font-bold text-gray-900 mb-3">{event.name}</h4>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar className="w-4 h-4 mr-2 text-primary-500" />
+                      <span>{event.date}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 mr-2 text-primary-500" />
+                      <span>{event.venue}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Users className="w-4 h-4 mr-2 text-primary-500" />
+                      <span>Team Size: {event.teamSize} | Max Teams: {event.maxTeams}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Clock className="w-4 h-4 mr-2 text-primary-500" />
+                      <span>Deadline: {event.deadline}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-3">
+                      <span className="text-primary-600 font-medium">Please log in to register for this event.</span>
+                    </p>
+                    <Link to="/student-login" className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 font-medium">
+                      Login to Register
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Feature Highlights */}
         <div className="max-w-7xl mx-auto px-6 py-16">
           <div className="text-center mb-10">
@@ -174,14 +257,12 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-extrabold text-xs">CSMU</span>
-              </div>
+              <img src="/Logo.jpeg" alt="CSMU Logo" className="w-8 h-8 rounded-lg object-cover" />
               <span className="text-gray-400 text-sm">Chhatrapati Shivaji Maharaj University</span>
             </div>
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 text-xs text-gray-500">
               <span>Authorized access only. All activities are monitored.</span>
-              <span>© 2025 CSMU — Event Management System</span>
+              <span>© 2026 CSMU — Event Management System</span>
             </div>
           </div>
         </div>

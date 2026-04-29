@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import Input from '../components/Input';
-import Button from '../components/Button';
+import { Users, Calendar, MapPin, Clock } from 'lucide-react';
 import Card from '../components/Card';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import Select from '../components/Select';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import LoadingSpinner from '../components/LoadingSpinner';
+import PageBackground from '../components/PageBackground';
 
 const EventRegistration = () => {
   const { eventId } = useParams();
@@ -128,11 +132,11 @@ const EventRegistration = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PageBackground>
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main id="main-content" className="flex-1 ml-60 p-4">
+        <main id="main-content" className="flex-1 p-4">
           <div className="mb-4">
             <h1 className="text-2xl font-semibold text-gray-900">Register for Event</h1>
             <p className="text-gray-600 text-sm mt-1">{event.name}</p>
@@ -259,7 +263,7 @@ const EventRegistration = () => {
           </Card>
         </main>
       </div>
-    </div>
+    </PageBackground>
   );
 };
 
