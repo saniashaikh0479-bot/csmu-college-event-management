@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../services/api';
 import { QrCode, CheckCircle, XCircle, ArrowLeft, RefreshCw, Camera } from 'lucide-react';
 import Card from '../components/Card';
@@ -12,6 +13,7 @@ import PageBackground from '../components/PageBackground';
 const QRAttendance = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const scannerRef = useRef(null);
   const [event, setEvent] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [scanning, setScanning] = useState(false);
@@ -20,9 +22,15 @@ const QRAttendance = () => {
   const [loading, setLoading] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAttendance, setPendingAttendance] = useState(null);
+  const [scanError, setScanError] = useState(null);
 
   useEffect(() => {
     loadData();
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(err => console.error('Scanner stop error:', err));
+      }
+    };
   }, [eventId]);
 
   const loadData = async () => {
@@ -40,13 +48,61 @@ const QRAttendance = () => {
     setLoading(false);
   };
 
-  const handleScan = () => {
-    // Simulate QR code scanning
-    const mockCodes = participants.map(p => ({ code: `REG-${p.id}`, ...p }));
-    const randomCode = mockCodes[Math.floor(Math.random() * mockCodes.length)];
-    setScannedCode(randomCode.code);
-    setLastScanned(randomCode);
+  const handleStartScan = async () => {
+    setScanError(null);
+    try {
+      const scanner = new Html5Qrcode('qr-reader');
+      scannerRef.current = scanner;
+      
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      await scanner.start(
+        { facingMode: 'environment' },
+        config,
+        (decodedText) => {
+          onScanSuccess(decodedText);
+        },
+        (errorMessage) => {
+          // Ignore scanning errors during normal operation
+        }
+      );
+      
+      setScanning(true);
+    } catch (err) {
+      console.error('Scanner start error:', err);
+      setScanError('Failed to start camera. Please ensure camera permissions are granted.');
+    }
+  };
+
+  const handleStopScan = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current = null;
+      } catch (err) {
+        console.error('Scanner stop error:', err);
+      }
+    }
     setScanning(false);
+  };
+
+  const onScanSuccess = (decodedText) => {
+    if (!decodedText.startsWith('REG-')) {
+      setScanError('Invalid QR code format. Please scan a valid registration QR code.');
+      return;
+    }
+
+    const registrationId = parseInt(decodedText.replace('REG-', ''));
+    const participant = participants.find(p => p.id === registrationId);
+
+    if (!participant) {
+      setScanError('Registration not found for this event.');
+      return;
+    }
+
+    setScannedCode(decodedText);
+    setLastScanned(participant);
+    handleStopScan();
   };
 
   const handleMarkAttendance = async (registrationId, attended) => {
@@ -115,27 +171,26 @@ const QRAttendance = () => {
                     <div className="w-48 h-48 bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center mx-auto mb-4">
                       <QrCode className="w-16 h-16 text-gray-400" />
                     </div>
-                    <Button onClick={() => setScanning(true)} size="lg">
+                    <Button onClick={handleStartScan} size="lg">
                       <Camera className="w-5 h-5 mr-2" />
                       Start Scanning
                     </Button>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <div className="w-48 h-48 bg-primary-50 border-2 border-primary-300 flex items-center justify-center mx-auto mb-4 animate-pulse">
-                      <Camera className="w-16 h-16 text-primary-400" />
-                    </div>
+                    <div id="qr-reader" className="w-48 h-48 mx-auto mb-4"></div>
                     <p className="text-gray-600 mb-4 text-sm">Position QR code in frame...</p>
-                    <Button onClick={handleScan} variant="secondary">
-                      Simulate Scan
-                    </Button>
                     <Button
                       variant="ghost"
-                      onClick={() => setScanning(false)}
-                      className="ml-2"
+                      onClick={handleStopScan}
                     >
                       Cancel
                     </Button>
+                  </div>
+                )}
+                {scanError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-300 text-red-700 text-sm">
+                    {scanError}
                   </div>
                 )}
               </div>

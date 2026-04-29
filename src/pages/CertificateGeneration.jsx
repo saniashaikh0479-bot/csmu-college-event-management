@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { Award, Download, Check, FileText } from 'lucide-react';
+import { Award, Download, Check, FileText, Trash2, Ban } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageBackground from '../components/PageBackground';
-import jsPDF from 'jspdf';
 
 const CertificateGeneration = () => {
   const { eventId } = useParams();
@@ -19,6 +18,7 @@ const CertificateGeneration = () => {
   const [certificateType, setCertificateType] = useState('participation');
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [certificates, setCertificates] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -36,6 +36,18 @@ const CertificateGeneration = () => {
     if (regsRes.success) {
       setParticipants(regsRes.data);
     }
+
+    // Load existing certificates for this event
+    const allCerts = [];
+    for (const participant of regsRes.data || []) {
+      const certsRes = await api.getCertificates(participant.studentId);
+      if (certsRes.success) {
+        const eventCerts = certsRes.data.filter(c => c.eventId === parseInt(eventId));
+        allCerts.push(...eventCerts);
+      }
+    }
+    setCertificates(allCerts);
+
     setLoading(false);
   };
 
@@ -58,79 +70,55 @@ const CertificateGeneration = () => {
   const generateCertificate = async (participant) => {
     setGenerating(true);
 
-    // Save certificate to database
-    await api.generateCertificate({
+    // Save certificate to database only
+    const response = await api.generateCertificate({
       eventId: parseInt(eventId),
       studentId: participant.studentId,
       type: certificateType
     });
-    
-    const pdf = new jsPDF('landscape', 'mm', 'a4');
-    const width = pdf.internal.pageSize.getWidth();
-    const height = pdf.internal.pageSize.getHeight();
 
-    // Certificate border
-    pdf.setLineWidth(2);
-    pdf.setDrawColor(59, 130, 246);
-    pdf.rect(10, 10, width - 20, height - 20);
-    
-    pdf.setLineWidth(1);
-    pdf.setDrawColor(147, 197, 253);
-    pdf.rect(15, 15, width - 30, height - 30);
+    if (response.success) {
+      // Refresh participants to show certificate status
+      loadData();
+    } else {
+      alert(response.error || 'Failed to generate certificate');
+    }
 
-    // Header
-    pdf.setFontSize(32);
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('Certificate of Achievement', width / 2, 40, { align: 'center' });
-
-    // Event name
-    pdf.setFontSize(20);
-    pdf.setTextColor(30, 41, 59);
-    pdf.text(`For participation in`, width / 2, 60, { align: 'center' });
-    
-    pdf.setFontSize(28);
-    pdf.setTextColor(59, 130, 246);
-    pdf.text(event?.name || 'Event Name', width / 2, 80, { align: 'center' });
-
-    // Awarded to
-    pdf.setFontSize(18);
-    pdf.setTextColor(71, 85, 105);
-    pdf.text('This certificate is proudly awarded to', width / 2, 110, { align: 'center' });
-
-    // Recipient name
-    pdf.setFontSize(36);
-    pdf.setTextColor(30, 41, 59);
-    pdf.text(participant.teamName || participant.captainName, width / 2, 135, { align: 'center' });
-
-    // Details
-    pdf.setFontSize(14);
-    pdf.setTextColor(71, 85, 105);
-    pdf.text(`Captain: ${participant.captainName}`, width / 2, 160, { align: 'center' });
-    pdf.text(`Department: ${participant.department}`, width / 2, 175, { align: 'center' });
-
-    // Date and venue
-    pdf.setFontSize(14);
-    pdf.setTextColor(71, 85, 105);
-    pdf.text(`Held on ${event?.date} at ${event?.venue}`, width / 2, 200, { align: 'center' });
-
-    // Footer
-    pdf.setFontSize(12);
-    pdf.setTextColor(148, 163, 184);
-    pdf.text('College Event Management System', width / 2, height - 25, { align: 'center' });
-
-    pdf.save(`${participant.teamName.replace(/\s+/g, '_')}_certificate.pdf`);
     setGenerating(false);
   };
 
   const generateBulkCertificates = async () => {
     setGenerating(true);
     const selected = participants.filter(p => selectedParticipants.includes(p.id));
-    
+
     for (const participant of selected) {
       await generateCertificate(participant);
     }
-    
+
     setGenerating(false);
+  };
+
+  const handleDeleteCertificate = async (certificateId) => {
+    if (!confirm('Are you sure you want to delete this certificate?')) return;
+
+    const response = await api.deleteCertificate(certificateId);
+    if (response.success) {
+      setCertificates(certificates.filter(c => c.id !== certificateId));
+    } else {
+      alert(response.error || 'Failed to delete certificate');
+    }
+  };
+
+  const handleRevokeCertificate = async (certificateId) => {
+    const reason = prompt('Enter reason for revocation:');
+    if (!reason) return;
+
+    const response = await api.revokeCertificate(certificateId, reason);
+    if (response.success) {
+      loadData();
+    } else {
+      alert(response.error || 'Failed to revoke certificate');
+    }
   };
 
   if (loading) {
@@ -257,6 +245,73 @@ const CertificateGeneration = () => {
               </div>
             </div>
           </Card>
+
+          {certificates.length > 0 && (
+            <Card className="mb-4">
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Issued Certificates ({certificates.length})</h3>
+                <div className="bg-white border border-gray-300">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Student ID</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Issued Date</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {certificates.map((cert) => (
+                        <tr key={cert.id} className="border-b border-gray-300 hover:bg-gray-50">
+                          <td className="px-4 py-2 text-sm text-gray-900">{cert.studentId}</td>
+                          <td className="px-4 py-2">
+                            <span className="px-2 py-1 text-xs font-medium border bg-green-50 text-green-700 border-green-300 capitalize">
+                              {cert.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className={`px-2 py-1 text-xs font-medium border capitalize ${
+                              cert.status === 'revoked'
+                                ? 'bg-red-50 text-red-700 border-red-300'
+                                : 'bg-green-50 text-green-700 border-green-300'
+                            }`}>
+                              {cert.status || 'active'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-700">
+                            {new Date(cert.issuedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="flex space-x-2">
+                              {cert.status !== 'revoked' && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleRevokeCertificate(cert.id)}
+                                >
+                                  <Ban className="w-4 h-4 mr-1" />
+                                  Revoke
+                                </Button>
+                              )}
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteCertificate(cert.id)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {generating && (
             <Card>

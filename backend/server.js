@@ -104,7 +104,10 @@ function initializeDatabase() {
       event_id INTEGER NOT NULL,
       student_id INTEGER NOT NULL,
       type TEXT NOT NULL DEFAULT 'participation',
+      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'revoked')),
       issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      revoked_at DATETIME,
+      revoked_reason TEXT,
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
       FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
     )
@@ -162,7 +165,16 @@ function runMigrations() {
     db.exec(`ALTER TABLE events ADD COLUMN special_award_recipient TEXT`);
   } catch (e) {}
   try {
-    db.exec(`ALTER TABLE events ADD COLUMN status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled', 'completed'))`);
+    db.exec(`ALTER TABLE events ADD COLUMN status TEXT DEFAULT 'active' CHECK(status IN ('active', 'cancelled', 'completed', 'archived'))`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE certificates ADD COLUMN status TEXT DEFAULT 'active' CHECK(status IN ('active', 'revoked'))`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE certificates ADD COLUMN revoked_at DATETIME`);
+  } catch (e) {}
+  try {
+    db.exec(`ALTER TABLE certificates ADD COLUMN revoked_reason TEXT`);
   } catch (e) {}
 }
 runMigrations();
@@ -500,13 +512,34 @@ app.put('/api/events/:id/cancel', (req, res) => {
   if (!existing) {
     return res.json({ success: false, error: 'Event not found' });
   }
-  
+
   db.prepare(`
     UPDATE events SET status = 'cancelled', cancellation_reason = ?, cancelled_at = ? WHERE id = ?
   `).run(reason || '', new Date().toISOString(), req.params.id);
-  
+
   const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
   console.log(`[EVENT] Cancelled event #${updated.id}: ${updated.name}`);
+  res.json({ success: true, data: {
+    ...updated,
+    teamSize: updated.team_size,
+    maxTeams: updated.max_teams,
+    registeredTeams: updated.registered_teams,
+    createdAt: updated.created_at,
+    cancelledAt: updated.cancelled_at,
+    cancellationReason: updated.cancellation_reason
+  }});
+});
+
+app.put('/api/events/:id/archive', (req, res) => {
+  const existing = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  if (!existing) {
+    return res.json({ success: false, error: 'Event not found' });
+  }
+
+  db.prepare(`UPDATE events SET status = 'archived' WHERE id = ?`).run(req.params.id);
+
+  const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  console.log(`[EVENT] Archived event #${updated.id}: ${updated.name}`);
   res.json({ success: true, data: {
     ...updated,
     teamSize: updated.team_size,
@@ -624,6 +657,18 @@ app.post('/api/registrations', (req, res) => {
   if (!event) {
     return res.json({ success: false, error: 'Event not found' });
   }
+
+  // Check event status
+  if (event.status !== 'active') {
+    return res.json({ success: false, error: `Cannot register for ${event.status} events` });
+  }
+
+  // Check deadline
+  const now = new Date();
+  const deadline = new Date(event.deadline);
+  if (now > deadline) {
+    return res.json({ success: false, error: 'Registration deadline has passed' });
+  }
   
   if (event.registered_teams >= event.max_teams) {
     return res.json({ success: false, error: 'Event is fully booked' });
@@ -667,9 +712,30 @@ app.put('/api/registrations/:id/attendance', (req, res) => {
   if (!existing) {
     return res.json({ success: false, error: 'Registration not found' });
   }
-  
+
+  // Get event details for time validation
+  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(existing.event_id);
+  if (!event) {
+    return res.json({ success: false, error: 'Event not found' });
+  }
+
+  // Validate attendance can only be marked on event date
+  const eventDate = new Date(event.date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  eventDate.setHours(0, 0, 0, 0);
+
+  if (attended && eventDate.getTime() !== today.getTime()) {
+    return res.json({ success: false, error: 'Attendance can only be marked on the event date' });
+  }
+
+  // Prevent toggling if already set to the same value
+  if (existing.attended === (attended ? 1 : 0)) {
+    return res.json({ success: false, error: 'Attendance is already set to this value' });
+  }
+
   db.prepare('UPDATE registrations SET attended = ? WHERE id = ?').run(attended ? 1 : 0, req.params.id);
-  
+
   const updated = db.prepare('SELECT * FROM registrations WHERE id = ?').get(req.params.id);
   res.json({ success: true, data: {
     ...updated,
@@ -680,6 +746,33 @@ app.put('/api/registrations/:id/attendance', (req, res) => {
     members: JSON.parse(updated.members),
     registeredAt: updated.registered_at
   }});
+});
+
+app.delete('/api/registrations/:id', (req, res) => {
+  const registration = db.prepare('SELECT * FROM registrations WHERE id = ?').get(req.params.id);
+  if (!registration) {
+    return res.json({ success: false, error: 'Registration not found' });
+  }
+
+  // Check if event has already passed
+  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(registration.event_id);
+  if (event && new Date(event.date) < new Date()) {
+    return res.json({ success: false, error: 'Cannot cancel registration for past events' });
+  }
+
+  // Delete registration and update event count
+  const deleteRegistration = db.transaction((regId, eventId) => {
+    db.prepare('DELETE FROM registrations WHERE id = ?').run(regId);
+    db.prepare('UPDATE events SET registered_teams = registered_teams - 1 WHERE id = ?').run(eventId);
+  });
+
+  try {
+    deleteRegistration(req.params.id, registration.event_id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DELETE REGISTRATION]', err.message);
+    res.json({ success: false, error: 'Failed to cancel registration. Please try again.' });
+  }
 });
 
 // ============ USER MANAGEMENT ROUTES ============
@@ -893,17 +986,67 @@ app.get('/api/certificates/student/:studentId', (req, res) => {
 });
 
 app.post('/api/certificates', (req, res) => {
+  const { eventId, studentId, type } = req.body;
+
+  // Check for duplicate certificate
+  const existing = db.prepare('SELECT * FROM certificates WHERE event_id = ? AND student_id = ? AND type = ?')
+    .get(eventId, studentId, type);
+
+  if (existing) {
+    return res.json({ success: false, error: 'Certificate already exists for this student and event type' });
+  }
+
   const result = db.prepare(`
     INSERT INTO certificates (event_id, student_id, type)
     VALUES (?, ?, ?)
-  `).run(req.body.eventId, req.body.studentId, req.body.type);
-  
+  `).run(eventId, studentId, type);
+
   const newCertificate = db.prepare('SELECT * FROM certificates WHERE id = ?').get(result.lastInsertRowid);
   res.json({ success: true, data: {
     ...newCertificate,
     eventId: newCertificate.event_id,
     studentId: newCertificate.student_id,
     issuedAt: newCertificate.issued_at
+  }});
+});
+
+app.delete('/api/certificates/:id', (req, res) => {
+  const certificate = db.prepare('SELECT * FROM certificates WHERE id = ?').get(req.params.id);
+  if (!certificate) {
+    return res.json({ success: false, error: 'Certificate not found' });
+  }
+
+  const result = db.prepare('DELETE FROM certificates WHERE id = ?').run(req.params.id);
+  if (result.changes > 0) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, error: 'Failed to delete certificate' });
+  }
+});
+
+app.put('/api/certificates/:id/revoke', (req, res) => {
+  const { reason } = req.body;
+  const certificate = db.prepare('SELECT * FROM certificates WHERE id = ?').get(req.params.id);
+  if (!certificate) {
+    return res.json({ success: false, error: 'Certificate not found' });
+  }
+
+  if (certificate.status === 'revoked') {
+    return res.json({ success: false, error: 'Certificate is already revoked' });
+  }
+
+  db.prepare(`
+    UPDATE certificates SET status = 'revoked', revoked_at = ?, revoked_reason = ? WHERE id = ?
+  `).run(new Date().toISOString(), reason || '', req.params.id);
+
+  const updated = db.prepare('SELECT * FROM certificates WHERE id = ?').get(req.params.id);
+  res.json({ success: true, data: {
+    ...updated,
+    eventId: updated.event_id,
+    studentId: updated.student_id,
+    issuedAt: updated.issued_at,
+    revokedAt: updated.revoked_at,
+    revokedReason: updated.revoked_reason
   }});
 });
 

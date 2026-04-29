@@ -125,6 +125,18 @@ export const api = {
     }
   },
 
+  archiveEvent: async (eventId) => {
+    try {
+      const response = await fetch(`${API_BASE}/events/${eventId}/archive`, {
+        method: 'PUT'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Archive event error:', error);
+      return { success: false, error: 'Failed to archive event. Please try again.' };
+    }
+  },
+
   getRegistrations: async (eventId) => {
     try {
       const url = eventId !== undefined
@@ -176,6 +188,18 @@ export const api = {
     }
   },
 
+  cancelRegistration: async (registrationId) => {
+    try {
+      const response = await fetch(`${API_BASE}/registrations/${registrationId}`, {
+        method: 'DELETE'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Cancel registration error:', error);
+      return { success: false, error: 'Failed to cancel registration. Please try again.' };
+    }
+  },
+
   generateCertificate: async (certificateData) => {
     try {
       const response = await fetch(`${API_BASE}/certificates`, {
@@ -197,6 +221,32 @@ export const api = {
     } catch (error) {
       console.error('Get certificates error:', error);
       return { success: false, error: 'Failed to load certificates. Please try again.' };
+    }
+  },
+
+  deleteCertificate: async (certificateId) => {
+    try {
+      const response = await fetch(`${API_BASE}/certificates/${certificateId}`, {
+        method: 'DELETE'
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Delete certificate error:', error);
+      return { success: false, error: 'Failed to delete certificate. Please try again.' };
+    }
+  },
+
+  revokeCertificate: async (certificateId, reason) => {
+    try {
+      const response = await fetch(`${API_BASE}/certificates/${certificateId}/revoke`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Revoke certificate error:', error);
+      return { success: false, error: 'Failed to revoke certificate. Please try again.' };
     }
   },
 

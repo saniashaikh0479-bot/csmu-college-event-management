@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Calendar, MapPin, Users, Clock, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, ArrowLeft, QrCode } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import PageBackground from '../components/PageBackground';
+import QRCode from 'qrcode.react';
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -140,7 +141,7 @@ const EventDetails = () => {
                 {registration && (
                   <div className="mb-6 p-3 bg-green-50 border border-green-300">
                     <h3 className="font-semibold text-green-800 mb-2 text-sm">Your Registration</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                       <div>
                         <span className="text-green-600">Team Name:</span>
                         <span className="ml-2 font-medium text-green-900">{registration.teamName}</span>
@@ -157,6 +158,16 @@ const EventDetails = () => {
                         <span className="text-green-600">Status:</span>
                         <span className="ml-2 font-medium text-green-900">{registration.attended ? 'Attended' : 'Not Attended'}</span>
                       </div>
+                    </div>
+                    <div className="flex flex-col items-center p-4 bg-white border border-green-300 rounded">
+                      <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                        <QrCode className="w-4 h-4 mr-2" />
+                        Your Attendance QR Code
+                      </h4>
+                      <div className="bg-white p-2 border-2 border-green-400 rounded">
+                        <QRCode value={`REG-${registration.id}`} size={150} />
+                      </div>
+                      <p className="text-xs text-green-600 mt-2">Show this QR code at the event venue for attendance</p>
                     </div>
                   </div>
                 )}

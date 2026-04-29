@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
-import { Calendar, Users, TrendingUp, Clock, Plus, XCircle } from 'lucide-react';
+import { Calendar, Users, TrendingUp, Clock, Plus, XCircle, Archive } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Navbar from '../components/Navbar';
@@ -173,10 +173,27 @@ const AdminDashboard = () => {
                         <Link to={`/edit-event/${event.id}`}>
                           <Button variant="outline" size="sm">Edit</Button>
                         </Link>
-                        {event.status !== 'cancelled' && (
-                          <Button 
-                            variant="danger" 
-                            size="sm" 
+                        {event.status === 'active' && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={async () => {
+                              if (window.confirm(`Archive event "${event.name}"? This will hide it from students.`)) {
+                                const res = await api.archiveEvent(event.id);
+                                if (res.success) {
+                                  loadData();
+                                }
+                              }
+                            }}
+                          >
+                            <Archive className="w-3 h-3 mr-1" />
+                            Archive
+                          </Button>
+                        )}
+                        {event.status !== 'cancelled' && event.status !== 'archived' && (
+                          <Button
+                            variant="danger"
+                            size="sm"
                             disabled={cancellingId === event.id}
                             onClick={async () => {
                               if (window.confirm(`Cancel event "${event.name}"? This will notify registered students.`)) {
@@ -195,6 +212,9 @@ const AdminDashboard = () => {
                         )}
                         {event.status === 'cancelled' && (
                           <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-700 border border-red-200">Cancelled</span>
+                        )}
+                        {event.status === 'archived' && (
+                          <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-50 text-gray-700 border border-gray-200">Archived</span>
                         )}
                       </div>
                     </td>
